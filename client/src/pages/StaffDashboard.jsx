@@ -555,11 +555,21 @@ export default function StaffDashboard() {
         }
     };
 
+    const togglePhotoPermission = async (studentId, currentStatus) => {
+        try {
+            const { data } = await api.put(`/admin/students/${studentId}/photo-permission`);
+            toast.success(data.message);
+            fetchStudents();
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to toggle photo permission');
+        }
+    };
+
     const handleApproveLeave = async (id) => {
         try {
             await api.put(`/leaves/${id}`, { status: 'Approved' });
             fetchAllLeaves();
-        } catch (err) { alert(err.response?.data?.message || err.message); }
+        } catch (err) { toast.error(err.response?.data?.message || err.message); }
     };
 
     const openRejectModal = (leave) => {
