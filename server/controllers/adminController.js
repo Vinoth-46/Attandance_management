@@ -626,6 +626,66 @@ const getAdvancedStats = async (req, res) => {
     }
 };
 
+// @desc    Get available class filters (departments, years, sections)
+// @route   GET /api/admin/class-filters
+// @access  Staff/Admin
+const getClassFilters = async (req, res) => {
+    try {
+        const { department } = req.query;
+
+        // Get all distinct departments
+        const departments = await User.distinct('department', { role: 'student', department: { $ne: null, $ne: '' } });
+
+        // If department is specified, get years and sections for that department
+        let years = [];
+        let sections = [];
+
+        if (department) {
+            years = await User.distinct('year', { role: 'student', department, year: { $ne: null, $ne: '' } });
+            sections = await User.distinct('section', { role: 'student', department, section: { $ne: null, $ne: '' } });
+        } else {
+            // Get all years and sections
+            years = await User.distinct('year', { role: 'student', year: { $ne: null, $ne: '' } });
+            sections = await User.distinct('section', { role: 'student', section: { $ne: null, $ne: '' } });
+        }
+
+        res.json({
+            departments: departments.sort(),
+            years: years.sort(),
+            sections: sections.sort()
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Promote students to next year
+// @route   POST /api/admin/students/promote
+// @access  SuperAdmin/Admin
+const promoteStudents = async (req, res) => {
+    const { department, fromYear, toYear } = req.body;
+
+    if (!fromYear || !toYear) {
+        return res.status(400).json({ message: 'fromYear and toYear are required' });
+    }
+
+    try {
+        const query = { role: 'student', year: fromYear };
+        if (department) {
+            query.department = department;
+        }
+
+        const result = await User.updateMany(query, { $set: { year: toYear } });
+
+        res.json({
+            message: `Promoted ${result.modifiedCount} students from ${fromYear} to ${toYear}`,
+            promoted: result.modifiedCount
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     addStudent,
     getStudents,
@@ -639,6 +699,8 @@ module.exports = {
     getMyClassStats,
     searchStudents,
     toggleHOD,
-    getAdvancedStats
+    getAdvancedStats,
+    getClassFilters,
+    promoteStudents
 };
 

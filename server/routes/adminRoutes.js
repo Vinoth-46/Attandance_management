@@ -14,7 +14,9 @@ const {
     getMyClassStats,
     searchStudents,
     toggleHOD,
-    getAdvancedStats
+    getAdvancedStats,
+    getClassFilters,
+    promoteStudents
 } = require('../controllers/adminController');
 const { protect, admin } = require('../middleware/authMiddleware');
 
@@ -40,6 +42,10 @@ const upload = multer({
 router.route('/advanced-stats')
     .get(protect, admin, getAdvancedStats);
 
+// Class filters (for cascading dropdowns)
+router.route('/class-filters')
+    .get(protect, admin, getClassFilters);
+
 // Staff Management
 router.route('/staff/:id/hod')
     .put(protect, admin, toggleHOD);
@@ -54,6 +60,10 @@ router.route('/myclass/stats')
 // Student search (limited info for identity verification - all staff can use)
 router.route('/students/search')
     .get(protect, admin, searchStudents);
+
+// Student promotion (year advancement)
+router.route('/students/promote')
+    .post(protect, admin, promoteStudents);
 
 // Student management routes
 router.route('/students')
