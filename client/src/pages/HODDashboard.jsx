@@ -1,12 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Layout from '../components/Layout';
-import axios from 'axios';
-
-// Use the same hostname as the current page (works for both localhost and network IP)
-const API_HOST = window.location.hostname;
-const API_PORT = 5000;
-const API_URL = import.meta.env.VITE_API_URL || `http://${API_HOST}:${API_PORT}`;
+import api from '../services/api';
 
 export default function HODDashboard() {
     const { user } = useAuth();
@@ -36,10 +31,7 @@ export default function HODDashboard() {
 
     const fetchStats = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`${API_URL}/api/hod/stats`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get('/hod/stats');
             setStats(res.data);
         } catch (error) {
             console.error('Error fetching stats:', error);
@@ -49,10 +41,7 @@ export default function HODDashboard() {
     const fetchStaff = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`${API_URL}/api/hod/staff`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get('/hod/staff');
             setStaff(res.data);
         } catch (error) {
             console.error('Error fetching staff:', error);
@@ -62,10 +51,7 @@ export default function HODDashboard() {
 
     const fetchStudents = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`${API_URL}/api/hod/students`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get('/hod/students');
             setStudents(res.data);
         } catch (error) {
             console.error('Error fetching students:', error);
@@ -75,10 +61,7 @@ export default function HODDashboard() {
     const handleCreateStaff = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
-            await axios.post(`${API_URL}/api/hod/staff`, formData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.post('/hod/staff', formData);
             setMessage({ type: 'success', text: 'Staff member created successfully!' });
             setShowCreateStaffModal(false);
             setFormData({ name: '', email: '', phone: '', staffId: '', password: '' });
@@ -93,10 +76,7 @@ export default function HODDashboard() {
         if (!confirm('Are you sure you want to delete this staff member?')) return;
 
         try {
-            const token = localStorage.getItem('token');
-            await axios.delete(`${API_URL}/api/hod/staff/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.delete(`/hod/staff/${id}`);
             setMessage({ type: 'success', text: 'Staff member deleted successfully!' });
             fetchStaff();
             fetchStats();
@@ -108,11 +88,7 @@ export default function HODDashboard() {
     const handleResetPassword = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
-            await axios.put(`${API_URL}/api/hod/staff/${selectedStaff._id}/password`,
-                { password: newPassword },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            await api.put(`/hod/staff/${selectedStaff._id}/password`, { password: newPassword });
             setMessage({ type: 'success', text: 'Password reset successfully!' });
             setShowResetPasswordModal(false);
             setNewPassword('');
@@ -124,11 +100,7 @@ export default function HODDashboard() {
 
     const handleAssignFacultyAdvisor = async (staffId, classInfo) => {
         try {
-            const token = localStorage.getItem('token');
-            await axios.put(`${API_URL}/api/hod/staff/${staffId}/class`,
-                { ...classInfo, isFacultyAdvisor: true },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            await api.put(`/hod/staff/${staffId}/class`, { ...classInfo, isFacultyAdvisor: true });
             setMessage({ type: 'success', text: 'Faculty Advisor assigned successfully!' });
             fetchStaff();
         } catch (error) {

@@ -868,8 +868,16 @@ export default function StaffDashboard() {
                                             {student.faceEmbedding?.length > 0 ? <span className="text-green-600">✓</span> : <span className="text-yellow-600">✗</span>}
                                         </td>
                                         <td className="whitespace-nowrap px-3 py-4 text-sm">
-                                            <button onClick={() => toggleEditPermission(student)} className={`px-2 py-1 rounded text-xs text-white ${student.canEditProfile ? 'bg-green-500' : 'bg-gray-400'}`}>
-                                                {student.canEditProfile ? 'Enabled' : 'Disabled'}
+                                            <button
+                                                onClick={() => toggleEditPermission(student)}
+                                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 ${student.canEditProfile ? 'bg-green-500' : 'bg-gray-300'}`}
+                                                role="switch"
+                                                aria-checked={student.canEditProfile}
+                                                title={student.canEditProfile ? 'Disable Edit Permission' : 'Enable Edit Permission'}
+                                            >
+                                                <span
+                                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${student.canEditProfile ? 'translate-x-5' : 'translate-x-0'}`}
+                                                />
                                             </button>
                                         </td>
                                         <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">

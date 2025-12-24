@@ -57,6 +57,21 @@ export default function ProfileCompletionModal({ onComplete }) {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+
+        // Validate phone numbers (only digits, max 10)
+        if (name === 'phone' || name === 'parentPhone' || name === 'emergencyContact') {
+            const numericValue = value.replace(/\D/g, '').slice(0, 10);
+            setFormData(prev => ({ ...prev, [name]: numericValue }));
+            return;
+        }
+
+        // Validate pincode (only digits, max 6)
+        if (name === 'pincode') {
+            const numericValue = value.replace(/\D/g, '').slice(0, 6);
+            setFormData(prev => ({ ...prev, [name]: numericValue }));
+            return;
+        }
+
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
@@ -172,10 +187,15 @@ export default function ProfileCompletionModal({ onComplete }) {
                                     name="phone"
                                     value={formData.phone}
                                     onChange={handleInputChange}
+                                    maxLength={10}
+                                    pattern="[0-9]{10}"
                                     className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-brand-500 focus:border-brand-500"
                                     placeholder="Your 10-digit mobile number"
                                     required
                                 />
+                                {formData.phone && formData.phone.length < 10 && (
+                                    <span className="text-xs text-orange-500">Enter 10 digits ({formData.phone.length}/10)</span>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -222,8 +242,14 @@ export default function ProfileCompletionModal({ onComplete }) {
                                                 name="pincode"
                                                 value={formData.pincode}
                                                 onChange={handleInputChange}
+                                                maxLength={6}
+                                                pattern="[0-9]{6}"
                                                 className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-brand-500 focus:border-brand-500"
+                                                placeholder="6 digits"
                                             />
+                                            {formData.pincode && formData.pincode.length < 6 && formData.pincode.length > 0 && (
+                                                <span className="text-xs text-orange-500">{formData.pincode.length}/6 digits</span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -280,10 +306,15 @@ export default function ProfileCompletionModal({ onComplete }) {
                                         name="parentPhone"
                                         value={formData.parentPhone}
                                         onChange={handleInputChange}
+                                        maxLength={10}
+                                        pattern="[0-9]{10}"
                                         className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-brand-500 focus:border-brand-500"
                                         placeholder="10-digit mobile number"
                                         required
                                     />
+                                    {formData.parentPhone && formData.parentPhone.length < 10 && (
+                                        <span className="text-xs text-orange-500">{formData.parentPhone.length}/10 digits</span>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Emergency Contact</label>
@@ -292,9 +323,14 @@ export default function ProfileCompletionModal({ onComplete }) {
                                         name="emergencyContact"
                                         value={formData.emergencyContact}
                                         onChange={handleInputChange}
+                                        maxLength={10}
+                                        pattern="[0-9]{10}"
                                         className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-brand-500 focus:border-brand-500"
-                                        placeholder="Alternative contact number"
+                                        placeholder="10-digit number (optional)"
                                     />
+                                    {formData.emergencyContact && formData.emergencyContact.length < 10 && formData.emergencyContact.length > 0 && (
+                                        <span className="text-xs text-orange-500">{formData.emergencyContact.length}/10 digits</span>
+                                    )}
                                 </div>
                             </div>
                         </div>
