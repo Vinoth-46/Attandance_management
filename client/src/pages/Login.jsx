@@ -23,9 +23,16 @@ export default function Login() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        setIsLoading(true);
 
-        const result = await login(username, password);
+        // Trim inputs to remove accidental spaces
+        const trimmedUsername = username.trim();
+        if (!trimmedUsername) {
+            setError('Please enter your User ID');
+            return;
+        }
+
+        setIsLoading(true);
+        const result = await login(trimmedUsername, password);
         setIsLoading(false);
 
         if (!result.success) {

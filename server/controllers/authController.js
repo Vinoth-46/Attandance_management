@@ -31,60 +31,70 @@ const generateToken = (user, sessionToken) => {
 // @route   POST /api/auth/login
 // @access  Public
 const loginUser = async (req, res) => {
-    const { username, password } = req.body;
+    // Trim whitespace from inputs
+    const username = (req.body.username || '').trim();
+    const password = req.body.password || '';
+
+    if (!username || !password) {
+        return res.status(400).json({ message: 'Please enter both User ID and Password' });
+    }
 
     try {
         const user = await User.findOne({
             $or: [{ rollNumber: username }, { staffId: username }, { email: username }]
         });
 
-        if (user) {
-            let isMatch = await bcrypt.compare(password, user.password);
-
-            if (isMatch) {
-                // Generate a unique session token for this login
-                const sessionToken = crypto.randomUUID();
-
-                // Save the session token to the user document
-                user.sessionToken = sessionToken;
-                await user.save();
-
-                const responseData = {
-                    _id: user._id,
-                    name: user.name,
-                    email: user.email,
-                    role: user.role,
-                    canEditProfile: user.canEditProfile,
-                    sessionToken: sessionToken, // Include in response for socket auth
-                    token: generateToken(user, sessionToken),
-                };
-
-                // Add staff-specific fields (including HOD)
-                if (['staff', 'hod', 'admin', 'superadmin'].includes(user.role)) {
-                    responseData.isFacultyAdvisor = user.isFacultyAdvisor || false;
-                    responseData.advisorClass = user.advisorClass || null;
-                }
-
-                // Add HOD-specific fields
-                if (user.role === 'hod') {
-                    responseData.assignedDepartment = user.assignedDepartment;
-                }
-
-                // Add student-specific fields
-                if (user.role === 'student') {
-                    responseData.isProfileComplete = user.isProfileComplete || false;
-                    responseData.department = user.department;
-                    responseData.year = user.year;
-                    responseData.section = user.section;
-                    responseData.rollNumber = user.rollNumber;
-                }
-
-                res.json(responseData);
-                return;
-            }
+        // User not found
+        if (!user) {
+            return res.status(401).json({ message: 'User ID not found. Please check your Roll Number, Staff ID, or Email.' });
         }
 
-        res.status(401).json({ message: 'Invalid credentials' });
+        // Check password
+        const isMatch = await bcrypt.compare(password, user.password);
+
+        if (!isMatch) {
+            return res.status(401).json({ message: 'Incorrect password. Please try again.' });
+        }
+
+        // Password matches - generate session
+        // Generate a unique session token for this login
+        const sessionToken = crypto.randomUUID();
+
+        // Save the session token to the user document
+        user.sessionToken = sessionToken;
+        await user.save();
+
+        const responseData = {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            canEditProfile: user.canEditProfile,
+            sessionToken: sessionToken, // Include in response for socket auth
+            token: generateToken(user, sessionToken),
+        };
+
+        // Add staff-specific fields (including HOD)
+        if (['staff', 'hod', 'admin', 'superadmin'].includes(user.role)) {
+            responseData.isFacultyAdvisor = user.isFacultyAdvisor || false;
+            responseData.advisorClass = user.advisorClass || null;
+        }
+
+        // Add HOD-specific fields
+        if (user.role === 'hod') {
+            responseData.assignedDepartment = user.assignedDepartment;
+        }
+
+        // Add student-specific fields
+        if (user.role === 'student') {
+            responseData.isProfileComplete = user.isProfileComplete || false;
+            responseData.department = user.department;
+            responseData.year = user.year;
+            responseData.section = user.section;
+            responseData.rollNumber = user.rollNumber;
+        }
+
+        res.json(responseData);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
