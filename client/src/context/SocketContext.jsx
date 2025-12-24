@@ -14,8 +14,8 @@ const getSocketUrl = () => {
     if (import.meta.env.VITE_API_URL) {
         return import.meta.env.VITE_API_URL;
     }
-    // In production (unified), use same origin
-    if (import.meta.env.PROD) {
+    // In production OR if running on HTTPS, use same origin
+    if (import.meta.env.PROD || window.location.protocol === 'https:') {
         return window.location.origin;
     }
     // Development: use port 5000

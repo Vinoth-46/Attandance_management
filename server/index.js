@@ -71,12 +71,82 @@ app.use('/api/auth/login', authLimiter);
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/attendance_system';
 
+// Auto-seed function for first run (when Shell is not available)
+const autoSeed = async () => {
+    const User = require('./models/User');
+    const bcrypt = require('bcryptjs');
+
+    const userCount = await User.countDocuments();
+    if (userCount > 0) {
+        console.log('Database already has users, skipping auto-seed');
+        return;
+    }
+
+    console.log('🌱 Auto-seeding database with default users...');
+    const hashedPassword = await bcrypt.hash('password123', 10);
+    const hashedStudentPassword = await bcrypt.hash('01-01-2005', 10);
+
+    try {
+        // Create default users
+        await User.create([
+            {
+                name: 'Principal',
+                email: 'principal@college.edu',
+                password: hashedPassword,
+                role: 'superadmin',
+                department: 'Administration'
+            },
+            {
+                name: 'Dr. HOD',
+                email: 'hod@college.edu',
+                staffId: 'hod',
+                password: hashedPassword,
+                role: 'hod',
+                department: 'Computer Science',
+                assignedDepartment: 'Computer Science'
+            },
+            {
+                name: 'Staff User',
+                email: 'staff@college.edu',
+                staffId: 'staff',
+                password: hashedPassword,
+                role: 'staff',
+                department: 'Computer Science',
+                isFacultyAdvisor: true,
+                advisorClass: { department: 'Computer Science', year: '2', section: 'A' }
+            },
+            {
+                name: 'Student User',
+                email: 'student@college.edu',
+                rollNumber: '1',
+                password: hashedStudentPassword,
+                role: 'student',
+                department: 'Computer Science',
+                year: '2',
+                section: 'A',
+                dob: new Date('2005-01-01'),
+                canEditProfile: true
+            }
+        ]);
+        console.log('✅ Auto-seed complete! Default users created.');
+        console.log('   Principal: principal@college.edu / password123');
+        console.log('   HOD: hod / password123');
+        console.log('   Staff: staff / password123');
+        console.log('   Student: 1 / 01-01-2005');
+    } catch (error) {
+        console.error('Auto-seed error:', error.message);
+    }
+};
+
 // Database Connection
 mongoose.connect(MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 })
-    .then(() => console.log('MongoDB Connected'))
+    .then(async () => {
+        console.log('MongoDB Connected');
+        await autoSeed();
+    })
     .catch(err => console.error('MongoDB Connection Error:', err));
 
 const authRoutes = require('./routes/authRoutes');

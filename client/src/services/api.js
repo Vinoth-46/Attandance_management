@@ -1,20 +1,20 @@
 import axios from 'axios';
 
 // API URL Configuration
-// In production (unified deployment), API is on the same origin
-// In development, API is on port 5000
+// In production, API is on the same origin (unified deployment)
+// The key is to detect if we're on HTTPS
 const getApiBaseUrl = () => {
-    // If VITE_API_URL is explicitly set, use it
+    // Check if explicitly set via environment
     if (import.meta.env.VITE_API_URL) {
         return `${import.meta.env.VITE_API_URL}/api`;
     }
 
-    // In production (unified), use same origin
-    if (import.meta.env.PROD) {
+    // In production OR if running on HTTPS, use relative path (same origin)
+    if (import.meta.env.PROD || window.location.protocol === 'https:') {
         return '/api';
     }
 
-    // For local development, use same hostname with port 5000
+    // For local development only (HTTP on localhost)
     const API_HOST = window.location.hostname;
     const API_PORT = 5000;
     return `http://${API_HOST}:${API_PORT}/api`;
