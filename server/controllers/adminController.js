@@ -292,6 +292,63 @@ const registerStudentFace = async (req, res) => {
     }
 };
 
+// @desc    Get students with pending photo update requests
+// @route   GET /api/admin/students/pending-photos
+// @access  Staff/Admin
+const getPendingPhotoRequests = async (req, res) => {
+    try {
+        const students = await User.find({
+            role: 'student',
+            'pendingPhotoUpdate.requestedAt': { $exists: true }
+        }).select('name rollNumber department year section profilePhoto pendingPhotoUpdate');
+
+        res.json(students);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Approve or reject pending photo update
+// @route   PUT /api/admin/students/:id/approve-photo
+// @access  Staff/Admin
+const approvePendingPhoto = async (req, res) => {
+    const { approve } = req.body; // true to approve, false to reject
+
+    try {
+        const student = await User.findById(req.params.id);
+
+        if (!student || student.role !== 'student') {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        if (!student.pendingPhotoUpdate || !student.pendingPhotoUpdate.requestedAt) {
+            return res.status(400).json({ message: 'No pending photo request for this student' });
+        }
+
+        if (approve) {
+            // Apply the pending photo update
+            student.profilePhoto = student.pendingPhotoUpdate.photo;
+            student.faceEmbedding = student.pendingPhotoUpdate.faceDescriptor;
+            student.canUpdatePhoto = false; // Auto-disable after approval
+        }
+
+        // Clear pending request
+        student.pendingPhotoUpdate = undefined;
+        student.photoUpdateFailedAttempts = 0;
+
+        await student.save();
+
+        res.json({
+            message: approve
+                ? `Photo update approved for ${student.name}`
+                : `Photo update rejected for ${student.name}`,
+            approved: approve
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // @desc    Toggle HOD role
 // @route   PUT /api/admin/staff/:id/hod
 // @access  SuperAdmin
@@ -742,6 +799,8 @@ module.exports = {
     toggleEditPermission,
     togglePhotoPermission,
     registerStudentFace,
+    getPendingPhotoRequests,
+    approvePendingPhoto,
     deleteStudent,
     bulkImportStudents,
     getMyClassStudents,

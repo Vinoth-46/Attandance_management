@@ -137,4 +137,102 @@ const getProfile = async (req, res) => {
     }
 };
 
-module.exports = { completeProfile, updateProfile, getProfile };
+// @desc    Update student photo with face verification
+// @route   PUT /api/students/update-photo
+// @access  Student
+const updatePhoto = async (req, res) => {
+    try {
+        const studentId = req.user.id;
+        const { newFaceDescriptor, newProfilePhoto, forceRequest } = req.body;
+
+        const student = await User.findById(studentId);
+
+        if (!student || student.role !== 'student') {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        // Check if photo update is allowed
+        if (!student.canUpdatePhoto) {
+            return res.status(403).json({
+                message: 'Photo update is not enabled. Please contact your Faculty Advisor.',
+                needsAdminApproval: true
+            });
+        }
+
+        // If forceRequest is true, student is requesting staff approval after failed attempts
+        if (forceRequest) {
+            student.pendingPhotoUpdate = {
+                photo: newProfilePhoto,
+                faceDescriptor: newFaceDescriptor,
+                requestedAt: new Date(),
+                reason: 'Face verification failed multiple times'
+            };
+            await student.save();
+
+            return res.json({
+                message: 'Photo update request sent to admin for approval.',
+                pendingApproval: true
+            });
+        }
+
+        // Face verification: compare new face with old face
+        if (!student.faceEmbedding || student.faceEmbedding.length === 0) {
+            return res.status(400).json({
+                message: 'No existing face data. Contact admin to register your photo.'
+            });
+        }
+
+        if (!newFaceDescriptor || newFaceDescriptor.length === 0) {
+            return res.status(400).json({ message: 'New face descriptor is required.' });
+        }
+
+        const distance = getEuclideanDistance(newFaceDescriptor, student.faceEmbedding);
+
+        // Track failed attempts
+        const failedAttempts = student.photoUpdateFailedAttempts || 0;
+
+        if (distance >= 0.6) {
+            // Face doesn't match - increment failed attempts
+            student.photoUpdateFailedAttempts = failedAttempts + 1;
+            await student.save();
+
+            if (failedAttempts + 1 >= 4) {
+                return res.status(400).json({
+                    message: 'Face verification failed 4 times. You can now request admin approval.',
+                    canRequestApproval: true,
+                    failedAttempts: failedAttempts + 1
+                });
+            }
+
+            return res.status(400).json({
+                message: `Face doesn't match your registered photo. Attempt ${failedAttempts + 1}/4.`,
+                failedAttempts: failedAttempts + 1,
+                canRequestApproval: false
+            });
+        }
+
+        // Face matches! Update photo
+        student.faceEmbedding = newFaceDescriptor;
+        student.profilePhoto = newProfilePhoto;
+
+        // Auto-disable after successful update
+        student.canUpdatePhoto = false;
+        student.photoUpdateFailedAttempts = 0;
+
+        await student.save();
+
+        const updatedStudent = student.toObject();
+        delete updatedStudent.password;
+
+        res.json({
+            message: 'Photo updated successfully! To change again, contact your administrator.',
+            ...updatedStudent,
+            photoUpdated: true
+        });
+    } catch (error) {
+        console.error('Update photo error:', error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+module.exports = { completeProfile, updateProfile, getProfile, updatePhoto };

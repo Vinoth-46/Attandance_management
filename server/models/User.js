@@ -33,6 +33,15 @@ const userSchema = new mongoose.Schema({
     canEditProfile: { type: Boolean, default: false }, // Admin controls if student can edit their profile
     canUpdatePhoto: { type: Boolean, default: false }, // Admin controls if student can update their photo
 
+    // Photo update tracking
+    photoUpdateFailedAttempts: { type: Number, default: 0 },
+    pendingPhotoUpdate: {
+        photo: { type: String },
+        faceDescriptor: { type: [Number], default: [] },
+        requestedAt: { type: Date },
+        reason: { type: String }
+    },
+
     // Staff Specific Fields
     staffId: { type: String, unique: true, sparse: true },
 

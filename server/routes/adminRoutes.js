@@ -9,6 +9,8 @@ const {
     toggleEditPermission,
     togglePhotoPermission,
     registerStudentFace,
+    getPendingPhotoRequests,
+    approvePendingPhoto,
     deleteStudent,
     bulkImportStudents,
     getMyClassStudents,
@@ -70,6 +72,10 @@ router.route('/students/promote')
 router.route('/students/photo-permission')
     .put(protect, admin, togglePhotoPermission);
 
+// Pending photo update requests (staff reviews these)
+router.route('/students/pending-photos')
+    .get(protect, admin, getPendingPhotoRequests);
+
 // Student management routes
 router.route('/students')
     .post(protect, admin, addStudent)
@@ -91,5 +97,8 @@ router.route('/students/:id/permission')
 
 router.route('/students/:id/photo-permission')
     .put(protect, admin, togglePhotoPermission);
+
+router.route('/students/:id/approve-photo')
+    .put(protect, admin, approvePendingPhoto);
 
 module.exports = router;
