@@ -7,6 +7,7 @@ const {
     getStudentDetails,
     updateStudent,
     toggleEditPermission,
+    togglePhotoPermission,
     registerStudentFace,
     deleteStudent,
     bulkImportStudents,
@@ -65,6 +66,10 @@ router.route('/students/search')
 router.route('/students/promote')
     .post(protect, admin, promoteStudents);
 
+// Bulk photo permission toggle (all students)
+router.route('/students/photo-permission')
+    .put(protect, admin, togglePhotoPermission);
+
 // Student management routes
 router.route('/students')
     .post(protect, admin, addStudent)
@@ -84,5 +89,7 @@ router.route('/students/:id/face')
 router.route('/students/:id/permission')
     .put(protect, admin, toggleEditPermission);
 
-module.exports = router;
+router.route('/students/:id/photo-permission')
+    .put(protect, admin, togglePhotoPermission);
 
+module.exports = router;

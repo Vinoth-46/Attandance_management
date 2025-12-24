@@ -200,6 +200,46 @@ const toggleEditPermission = async (req, res) => {
     }
 };
 
+// @desc    Toggle student photo update permission
+// @route   PUT /api/admin/students/:id/photo-permission
+// @access  Staff/Admin
+const togglePhotoPermission = async (req, res) => {
+    const { enableAll } = req.body; // If true, enable for all students in filter
+
+    try {
+        // If enableAll is requested with optional filter
+        if (enableAll !== undefined) {
+            const filter = { role: 'student' };
+            const result = await User.updateMany(filter, { $set: { canUpdatePhoto: enableAll } });
+            return res.json({
+                message: `Photo update permission ${enableAll ? 'enabled' : 'disabled'} for ${result.modifiedCount} students`,
+                modifiedCount: result.modifiedCount
+            });
+        }
+
+        // Single student toggle
+        const student = await User.findById(req.params.id);
+
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        if (student.role !== 'student') {
+            return res.status(400).json({ message: 'Can only modify student permissions' });
+        }
+
+        student.canUpdatePhoto = !student.canUpdatePhoto;
+        await student.save();
+
+        res.json({
+            message: `Photo update permission ${student.canUpdatePhoto ? 'enabled' : 'disabled'} for ${student.name}`,
+            canUpdatePhoto: student.canUpdatePhoto
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // @desc    Register student face embedding
 // @route   POST /api/admin/students/:id/face
 // @access  Staff/Admin
@@ -700,6 +740,7 @@ module.exports = {
     getStudentDetails,
     updateStudent,
     toggleEditPermission,
+    togglePhotoPermission,
     registerStudentFace,
     deleteStudent,
     bulkImportStudents,
