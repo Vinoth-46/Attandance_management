@@ -18,6 +18,10 @@ export default function ProfileCompletionModal({ onComplete }) {
     const [faceDescriptor, setFaceDescriptor] = useState(null);
     const [status, setStatus] = useState('Ready.');
 
+    // Verification mode: if staff pre-added photo, student must verify face
+    const hasExistingPhoto = user?.profilePhoto && user.profilePhoto.length > 0;
+    const [verificationStatus, setVerificationStatus] = useState(null); // 'success', 'failed', null
+
     // Form state
     const [formData, setFormData] = useState({
         phone: '',
@@ -138,7 +142,13 @@ export default function ProfileCompletionModal({ onComplete }) {
             setStep(2);
         } else {
             // Submit Profile
-            if (!faceDescriptor) {
+            // For verification mode, just need successful verification
+            if (hasExistingPhoto && verificationStatus !== 'success') {
+                alert("Please verify your face matches your photo.");
+                return;
+            }
+            // For new photo mode, need face descriptor
+            if (!hasExistingPhoto && !faceDescriptor) {
                 alert("Please capture or upload a photo with a visible face.");
                 return;
             }
@@ -342,92 +352,213 @@ export default function ProfileCompletionModal({ onComplete }) {
                     {/* Step 2: Face Photo */}
                     {step === 2 && (
                         <div className="space-y-4">
-                            <h3 className="font-semibold text-gray-900 mb-2">Upload Your Face Photo</h3>
-                            <p className="text-sm text-gray-500 mb-4">
-                                This photo will be used for face recognition attendance. Make sure your face is clearly visible.
-                            </p>
+                            {/* VERIFICATION MODE: If staff already added photo */}
+                            {hasExistingPhoto ? (
+                                <>
+                                    <h3 className="font-semibold text-gray-900 mb-2">🔐 Verify Your Identity</h3>
+                                    <p className="text-sm text-gray-500 mb-4">
+                                        Your photo was added by staff. Please take a selfie to verify it's really you.
+                                    </p>
 
-                            {/* Mode Tabs */}
-                            <div className="flex border-b border-gray-200 mb-4">
-                                <button
-                                    onClick={() => { setMode('upload'); setPreviewUrl(null); setFaceDescriptor(null); }}
-                                    className={`px-4 py-2 text-sm font-medium ${mode === 'upload' ? 'border-b-2 border-brand-600 text-brand-600' : 'text-gray-500 hover:text-gray-700'}`}
-                                >
-                                    📁 Upload Photo
-                                </button>
-                                <button
-                                    onClick={() => { setMode('webcam'); setPreviewUrl(null); setFaceDescriptor(null); }}
-                                    className={`px-4 py-2 text-sm font-medium ${mode === 'webcam' ? 'border-b-2 border-brand-600 text-brand-600' : 'text-gray-500 hover:text-gray-700'}`}
-                                >
-                                    📷 Use Webcam
-                                </button>
-                            </div>
-
-                            {/* Upload Mode */}
-                            {mode === 'upload' && (
-                                <div className="relative bg-gray-100 rounded-lg overflow-hidden h-64 flex items-center justify-center border-2 border-dashed border-gray-300 hover:border-brand-500 transition-colors">
-                                    {previewUrl ? (
-                                        <img src={previewUrl} alt="Preview" className="max-h-full max-w-full object-contain" />
-                                    ) : (
+                                    <div className="grid grid-cols-2 gap-4 mb-4">
+                                        {/* Existing Photo */}
                                         <div className="text-center">
-                                            <p className="mt-2 text-sm text-gray-600">Click to upload your photo</p>
-                                            <p className="text-xs text-gray-400">JPG, PNG supported</p>
+                                            <p className="text-xs text-gray-500 mb-2">Your Registered Photo</p>
+                                            <div className="w-32 h-32 mx-auto rounded-lg overflow-hidden border-2 border-gray-200">
+                                                <img src={user.profilePhoto} alt="Registered" className="w-full h-full object-cover" />
+                                            </div>
+                                        </div>
+
+                                        {/* Verification Photo */}
+                                        <div className="text-center">
+                                            <p className="text-xs text-gray-500 mb-2">Your Selfie</p>
+                                            <div className="w-32 h-32 mx-auto rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-100 flex items-center justify-center">
+                                                {previewUrl ? (
+                                                    <img src={previewUrl} alt="Selfie" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <span className="text-gray-400 text-3xl">📷</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Verification Status */}
+                                    {verificationStatus === 'success' && (
+                                        <div className="bg-green-100 text-green-800 p-3 rounded-lg text-center font-medium">
+                                            ✅ Face verified! You can proceed.
                                         </div>
                                     )}
-                                    <input
-                                        type="file"
-                                        ref={fileInputRef}
-                                        accept="image/*"
-                                        onChange={handleFileChange}
-                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                    />
-                                </div>
-                            )}
+                                    {verificationStatus === 'failed' && (
+                                        <div className="bg-red-100 text-red-800 p-3 rounded-lg text-center font-medium">
+                                            ❌ Face doesn't match. Please try again.
+                                        </div>
+                                    )}
 
-                            {/* Webcam Mode */}
-                            {mode === 'webcam' && (
-                                <div className="space-y-4">
-                                    <div className="relative bg-black rounded-lg overflow-hidden h-64 flex items-center justify-center">
-                                        {loading ? (
-                                            <div className="text-center">
-                                                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-white mx-auto mb-2"></div>
-                                                <p className="text-white text-sm">{status}</p>
-                                            </div>
-                                        ) : previewUrl ? (
-                                            <img src={previewUrl} alt="Captured" className="max-h-full max-w-full object-contain" />
-                                        ) : (
+                                    {/* Webcam for verification */}
+                                    {!previewUrl && (
+                                        <div className="relative bg-gray-900 rounded-lg overflow-hidden h-48">
                                             <Webcam
                                                 audio={false}
                                                 ref={webcamRef}
                                                 screenshotFormat="image/jpeg"
-                                                className="absolute inset-0 w-full h-full object-cover"
+                                                videoConstraints={{ facingMode: 'user' }}
+                                                className="w-full h-full object-cover"
                                             />
-                                        )}
-                                    </div>
-                                    {!previewUrl && (
-                                        <button
-                                            onClick={handleWebcamCapture}
-                                            disabled={loading}
-                                            className="w-full py-2 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-500 disabled:opacity-50"
-                                        >
-                                            📸 Capture Photo
-                                        </button>
+                                        </div>
                                     )}
-                                    {previewUrl && (
-                                        <button
-                                            onClick={() => { setPreviewUrl(null); setFaceDescriptor(null); setStatus('Ready.'); }}
-                                            className="w-full py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300"
-                                        >
-                                            🔄 Retake Photo
-                                        </button>
-                                    )}
-                                </div>
-                            )}
 
-                            {/* Status */}
-                            <p className={`text-center font-medium ${status.includes('✅') ? 'text-green-600' : status.includes('❌') ? 'text-red-600' : 'text-brand-600'}`}>
-                                {status}
-                            </p>
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            if (previewUrl) {
+                                                // Reset for retry
+                                                setPreviewUrl(null);
+                                                setVerificationStatus(null);
+                                                return;
+                                            }
+
+                                            // Capture and verify
+                                            const imageSrc = webcamRef.current?.getScreenshot();
+                                            if (!imageSrc) return;
+
+                                            setPreviewUrl(imageSrc);
+                                            setStatus('Verifying face...');
+
+                                            try {
+                                                // Detect face in selfie
+                                                const img = await faceapi.fetchImage(imageSrc);
+                                                const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
+
+                                                if (!detection) {
+                                                    setStatus('No face detected. Try again.');
+                                                    setVerificationStatus('failed');
+                                                    return;
+                                                }
+
+                                                // Get face from existing photo
+                                                const existingImg = await faceapi.fetchImage(user.profilePhoto);
+                                                const existingDetection = await faceapi.detectSingleFace(existingImg).withFaceLandmarks().withFaceDescriptor();
+
+                                                if (!existingDetection) {
+                                                    setStatus('Could not read registered photo.');
+                                                    setVerificationStatus('failed');
+                                                    return;
+                                                }
+
+                                                // Compare faces
+                                                const distance = faceapi.euclideanDistance(detection.descriptor, existingDetection.descriptor);
+
+                                                if (distance < 0.6) {
+                                                    setStatus('✅ Face verified!');
+                                                    setVerificationStatus('success');
+                                                    setFaceDescriptor(Array.from(detection.descriptor));
+                                                } else {
+                                                    setStatus('❌ Face does not match.');
+                                                    setVerificationStatus('failed');
+                                                }
+                                            } catch (err) {
+                                                console.error(err);
+                                                setStatus('Error verifying face.');
+                                                setVerificationStatus('failed');
+                                            }
+                                        }}
+                                        disabled={loading}
+                                        className="w-full py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-500 font-medium disabled:opacity-50"
+                                    >
+                                        {previewUrl ? '🔄 Retake Photo' : '📸 Capture & Verify'}
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    {/* NEW PHOTO MODE: No existing photo */}
+                                    <h3 className="font-semibold text-gray-900 mb-2">Upload Your Face Photo</h3>
+                                    <p className="text-sm text-gray-500 mb-4">
+                                        This photo will be used for face recognition attendance. Make sure your face is clearly visible.
+                                    </p>
+
+                                    {/* Mode Tabs */}
+                                    <div className="flex border-b border-gray-200 mb-4">
+                                        <button
+                                            onClick={() => { setMode('upload'); setPreviewUrl(null); setFaceDescriptor(null); }}
+                                            className={`px-4 py-2 text-sm font-medium ${mode === 'upload' ? 'border-b-2 border-brand-600 text-brand-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                        >
+                                            📁 Upload Photo
+                                        </button>
+                                        <button
+                                            onClick={() => { setMode('webcam'); setPreviewUrl(null); setFaceDescriptor(null); }}
+                                            className={`px-4 py-2 text-sm font-medium ${mode === 'webcam' ? 'border-b-2 border-brand-600 text-brand-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                        >
+                                            📷 Use Webcam
+                                        </button>
+                                    </div>
+
+                                    {/* Upload Mode */}
+                                    {mode === 'upload' && (
+                                        <div className="relative bg-gray-100 rounded-lg overflow-hidden h-64 flex items-center justify-center border-2 border-dashed border-gray-300 hover:border-brand-500 transition-colors">
+                                            {previewUrl ? (
+                                                <img src={previewUrl} alt="Preview" className="max-h-full max-w-full object-contain" />
+                                            ) : (
+                                                <div className="text-center">
+                                                    <p className="mt-2 text-sm text-gray-600">Click to upload your photo</p>
+                                                    <p className="text-xs text-gray-400">JPG, PNG supported</p>
+                                                </div>
+                                            )}
+                                            <input
+                                                type="file"
+                                                ref={fileInputRef}
+                                                accept="image/*"
+                                                onChange={handleFileChange}
+                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* Webcam Mode */}
+                                    {mode === 'webcam' && (
+                                        <div className="space-y-4">
+                                            <div className="relative bg-black rounded-lg overflow-hidden h-64 flex items-center justify-center">
+                                                {loading ? (
+                                                    <div className="text-center">
+                                                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-white mx-auto mb-2"></div>
+                                                        <p className="text-white text-sm">{status}</p>
+                                                    </div>
+                                                ) : previewUrl ? (
+                                                    <img src={previewUrl} alt="Captured" className="max-h-full max-w-full object-contain" />
+                                                ) : (
+                                                    <Webcam
+                                                        audio={false}
+                                                        ref={webcamRef}
+                                                        screenshotFormat="image/jpeg"
+                                                        className="absolute inset-0 w-full h-full object-cover"
+                                                    />
+                                                )}
+                                            </div>
+                                            {!previewUrl && (
+                                                <button
+                                                    onClick={handleWebcamCapture}
+                                                    disabled={loading}
+                                                    className="w-full py-2 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-500 disabled:opacity-50"
+                                                >
+                                                    📸 Capture Photo
+                                                </button>
+                                            )}
+                                            {previewUrl && (
+                                                <button
+                                                    onClick={() => { setPreviewUrl(null); setFaceDescriptor(null); setStatus('Ready.'); }}
+                                                    className="w-full py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300"
+                                                >
+                                                    🔄 Retake Photo
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Status */}
+                                    <p className={`text-center font-medium ${status.includes('✅') ? 'text-green-600' : status.includes('❌') ? 'text-red-600' : 'text-brand-600'}`}>
+                                        {status}
+                                    </p>
+                                </>
+                            )}
                         </div>
                     )}
                 </div>
@@ -445,7 +576,7 @@ export default function ProfileCompletionModal({ onComplete }) {
                     <div className="ml-auto">
                         <button
                             onClick={handleSubmit}
-                            disabled={submitting || (step === 2 && !faceDescriptor)}
+                            disabled={submitting || (step === 2 && !hasExistingPhoto && !faceDescriptor) || (step === 2 && hasExistingPhoto && verificationStatus !== 'success')}
                             className="px-6 py-2 text-sm font-semibold text-white bg-brand-600 rounded-lg hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {submitting ? 'Saving...' : step === 1 ? 'Next →' : 'Complete Profile'}
