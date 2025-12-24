@@ -114,9 +114,22 @@ app.use((err, req, res, next) => {
     }
 });
 
-app.get('/', (req, res) => {
-    res.send('Attendance System API is running');
-});
+// ===== PRODUCTION: Serve Frontend Static Files =====
+const path = require('path');
+
+if (process.env.NODE_ENV === 'production') {
+    // Serve static files from the React app build
+    app.use(express.static(path.join(__dirname, '../client/dist')));
+
+    // Handle React routing - return index.html for all non-API routes
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+    });
+} else {
+    app.get('/', (req, res) => {
+        res.send('Attendance System API is running');
+    });
+}
 
 // Socket.io Setup
 const http = require('http');
@@ -124,9 +137,21 @@ const { Server } = require('socket.io');
 const { initializeSocket } = require('./socketHandler');
 
 const server = http.createServer(app);
+
+// Get allowed origins for Socket.io
+const getSocketOrigins = () => {
+    if (process.env.CLIENT_URL) {
+        return [process.env.CLIENT_URL];
+    }
+    if (process.env.ALLOWED_ORIGINS && process.env.ALLOWED_ORIGINS !== '*') {
+        return process.env.ALLOWED_ORIGINS.split(',');
+    }
+    return '*';
+};
+
 const io = new Server(server, {
     cors: {
-        origin: '*',
+        origin: getSocketOrigins(),
         methods: ['GET', 'POST']
     }
 });
@@ -139,5 +164,7 @@ app.set('io', io);
 
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT} with WebSocket support`);
-    console.log(`Network access: http://192.168.31.147:${PORT}`);
+    if (process.env.NODE_ENV === 'production') {
+        console.log('Serving frontend from /client/dist');
+    }
 });

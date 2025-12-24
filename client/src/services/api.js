@@ -1,12 +1,17 @@
 import axios from 'axios';
 
-// API URL Configuration for Render deployment
-// In production (Render), set VITE_API_URL environment variable to your backend URL
-// Example: VITE_API_URL=https://your-backend-name.onrender.com
+// API URL Configuration
+// In production (unified deployment), API is on the same origin
+// In development, API is on port 5000
 const getApiBaseUrl = () => {
-    // If VITE_API_URL is set (production), use it
+    // If VITE_API_URL is explicitly set, use it
     if (import.meta.env.VITE_API_URL) {
         return `${import.meta.env.VITE_API_URL}/api`;
+    }
+
+    // In production (unified), use same origin
+    if (import.meta.env.PROD) {
+        return '/api';
     }
 
     // For local development, use same hostname with port 5000

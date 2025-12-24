@@ -8,11 +8,17 @@ export const useSocket = () => {
     return useContext(SocketContext);
 };
 
-// Get socket URL for Render deployment
+// Get socket URL for deployment
 const getSocketUrl = () => {
+    // If explicitly set, use it
     if (import.meta.env.VITE_API_URL) {
         return import.meta.env.VITE_API_URL;
     }
+    // In production (unified), use same origin
+    if (import.meta.env.PROD) {
+        return window.location.origin;
+    }
+    // Development: use port 5000
     return `http://${window.location.hostname}:5000`;
 };
 

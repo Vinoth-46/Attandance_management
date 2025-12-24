@@ -1,0 +1,17 @@
+{
+  "name": "attendance-management-system",
+  "version": "1.0.0",
+  "description": "MERN Attendance Management System with Face Recognition",
+  "scripts": {
+    "start": "npm start --prefix server",
+    "build": "npm install --prefix server && npm install --prefix client && npm run build --prefix client",
+    "dev": "npm run dev --prefix server",
+    "seed": "node server/seedDatabase.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["attendance", "mern", "face-recognition"],
+  "author": "Vinoth",
+  "license": "MIT"
+}

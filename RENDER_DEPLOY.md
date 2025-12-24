@@ -1,129 +1,140 @@
-# Render Deployment Guide for Attendance Management System
+# Deploying to Render (Unified Service)
 
-## Overview
-This guide explains how to deploy both the frontend (React) and backend (Node.js) on Render.
+This guide explains how to deploy the Attendance Management System on Render as a **Unified Service** (Backend serves Frontend).
+
+## Prerequisites
+- Push your latest code to GitHub
+- Have a MongoDB Atlas account with a database ready
 
 ---
 
-## 🖥️ Backend Deployment (Web Service)
+## Step 1: Create New Web Service on Render
 
-### 1. Create a New Web Service
-- Go to Render Dashboard → New → Web Service
-- Connect your GitHub repository
+1. Log in to [dashboard.render.com](https://dashboard.render.com)
+2. Click **New +** → **Web Service**
+3. Connect your GitHub repository: `Attandance_management`
 
-### 2. Configure the Service
+---
+
+## Step 2: Configure Settings
+
 | Setting | Value |
 |---------|-------|
-| Name | `attendance-api` (or your choice) |
-| Root Directory | `server` |
-| Environment | `Node` |
-| Build Command | `npm install` |
-| Start Command | `npm start` |
+| **Name** | `attendance-system` (or your choice) |
+| **Region** | Closest to you (e.g., Singapore, Oregon) |
+| **Branch** | `main` |
+| **Root Directory** | **LEAVE BLANK** (empty) |
+| **Runtime** | `Node` |
+| **Build Command** | `npm run build` |
+| **Start Command** | `npm start` |
+| **Instance Type** | Free |
 
-### 3. Environment Variables
-Add these environment variables in Render:
+> ⚠️ **Important**: Leave "Root Directory" completely empty!
 
-```
-NODE_ENV=production
-JWT_SECRET=<generate a 64+ character random string>
-MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/attendance_system
-ALLOWED_ORIGINS=https://your-frontend-name.onrender.com
-PORT=10000
-```
+---
 
-**Generate JWT_SECRET:**
+## Step 3: Environment Variables
+
+Click **"Advanced"** and add these environment variables:
+
+| Key | Value |
+|-----|-------|
+| `NODE_ENV` | `production` |
+| `PORT` | `10000` |
+| `MONGO_URI` | Your MongoDB Atlas connection string |
+| `JWT_SECRET` | Your generated secret key (see below) |
+| `CLIENT_URL` | `https://your-app-name.onrender.com` |
+
+### Generate JWT_SECRET
+Run this in your terminal:
 ```bash
 node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 ```
 
+### Your JWT_SECRET (already generated):
+```
+e12e44d4aab0fd5da94c957a39c5545f00276a78afc6e3c60865e8c152dacdd4ac095485b8f1eb4437c8e7e571f34091565d11d643fb609c1994bddc30ee16e04
+```
+
 ---
 
-## 🌐 Frontend Deployment (Static Site)
+## Step 4: Deploy
 
-### 1. Create a New Static Site
-- Go to Render Dashboard → New → Static Site
-- Connect your GitHub repository
+Click **Create Web Service**
 
-### 2. Configure the Site
-| Setting | Value |
-|---------|-------|
-| Name | `attendance-app` (or your choice) |
-| Root Directory | `client` |
-| Build Command | `npm install && npm run build` |
-| Publish Directory | `dist` |
+Render will:
+1. ✅ Install backend dependencies (`server/`)
+2. ✅ Install frontend dependencies (`client/`)
+3. ✅ Build React frontend to `client/dist`
+4. ✅ Start the backend server (which serves the frontend)
 
-### 3. Environment Variables
-Add these environment variables in Render:
+**First deployment takes 5-10 minutes.**
 
+---
+
+## Step 5: Seed the Database
+
+After deployment completes:
+
+1. Go to your Web Service in Render
+2. Click the **Shell** tab
+3. Run:
+```bash
+node server/seedDatabase.js
 ```
-VITE_API_URL=https://your-backend-name.onrender.com
-VITE_MAINTENANCE_MODE=false
-```
 
-### 4. Redirect Rules
-Add this redirect rule for SPA routing:
-- Source: `/*`
-- Destination: `/index.html`
-- Status: `200`
+---
+
+## Step 6: Update CLIENT_URL
+
+After you get your Render URL:
+
+1. Go to **Environment** tab
+2. Update `CLIENT_URL` to your actual URL:
+   ```
+   CLIENT_URL=https://attendance-system-xxxx.onrender.com
+   ```
+3. Click **Save Changes** (service will redeploy)
+
+---
+
+## 🎉 Done!
+
+Your app is live at: `https://your-app-name.onrender.com`
+
+### Default Login Credentials
+
+| Role | Username | Password |
+|------|----------|----------|
+| Principal | `principal@college.edu` | `password123` |
+| HOD | `hod` | `password123` |
+| Staff | `staff` | `password123` |
+| Student | `1` | `01-01-2005` |
 
 ---
 
 ## 🔧 Maintenance Mode
 
 To enable maintenance mode:
-1. Go to your Frontend Static Site on Render
-2. Go to Environment → Environment Variables
-3. Change `VITE_MAINTENANCE_MODE` to `true`
-4. Click "Save Changes"
-5. Trigger a manual deploy
-
-To disable:
-- Set `VITE_MAINTENANCE_MODE` back to `false` and redeploy
+1. Go to **Environment** in Render
+2. Add: `VITE_MAINTENANCE_MODE=true`
+3. Trigger a new deploy
 
 ---
 
-## 📊 Database Setup (MongoDB Atlas)
+## Troubleshooting
 
-1. Go to [MongoDB Atlas](https://cloud.mongodb.com/)
-2. Create a free cluster
-3. Create a database user
-4. Whitelist all IPs (0.0.0.0/0) for Render access
-5. Copy the connection string
-6. Use it as `MONGO_URI` in your backend
+### "Service Root Directory is missing"
+- You typed something in **Root Directory**. Clear it completely and save.
 
----
+### Build Failed
+- Check the build logs in Render
+- Make sure `package.json` exists at the root level
 
-## 🌱 Initial Data Seeding
+### White Screen
+- Check browser console for errors
+- Verify the build completed successfully
 
-After first deployment, seed the database:
-
-1. Open Render Shell for your backend service
-2. Run: `node seedDatabase.js`
-
-### Default Credentials:
-| Role | Username | Password |
-|------|----------|----------|
-| Principal (Super Admin) | `principal@college.edu` | `password123` |
-| HOD | `hod` | `password123` |
-| Staff | `staff` | `password123` |
-| Student | `1` (roll number) | `01-01-2005` |
-
----
-
-## 🔗 URLs After Deployment
-
-- **Frontend:** `https://your-frontend-name.onrender.com`
-- **Backend:** `https://your-backend-name.onrender.com`
-- **API Health Check:** `https://your-backend-name.onrender.com/`
-
----
-
-## ⚠️ Important Notes
-
-1. **Free Tier Limitations:** Render free tier services spin down after inactivity. First request may take 30-60 seconds.
-
-2. **CORS:** Make sure `ALLOWED_ORIGINS` in backend matches your frontend URL.
-
-3. **WebSockets:** Render supports WebSockets out of the box.
-
-4. **HTTPS:** Render provides free SSL/HTTPS automatically.
+### Socket/Real-time Issues
+- Ensure `CLIENT_URL` matches your browser URL exactly
+- Check that WebSocket connections are not blocked
