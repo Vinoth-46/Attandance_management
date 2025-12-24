@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
+import { ToastProvider } from './components/Toast';
 import Login from './pages/Login';
 import StudentDashboard from './pages/StudentDashboard';
 import StaffDashboard from './pages/StaffDashboard';
@@ -51,50 +52,52 @@ function App() {
         <Router>
             <AuthProvider>
                 <SocketProvider>
-                    <Routes>
-                        <Route path="/login" element={<Login />} />
+                    <ToastProvider>
+                        <Routes>
+                            <Route path="/login" element={<Login />} />
 
-                        <Route
-                            path="/student/*"
-                            element={
-                                <ProtectedRoute allowedRoles={['student']}>
-                                    <StudentDashboard />
-                                </ProtectedRoute>
-                            }
-                        />
+                            <Route
+                                path="/student/*"
+                                element={
+                                    <ProtectedRoute allowedRoles={['student']}>
+                                        <StudentDashboard />
+                                    </ProtectedRoute>
+                                }
+                            />
 
-                        <Route
-                            path="/staff/*"
-                            element={
-                                <ProtectedRoute allowedRoles={['staff', 'admin']}>
-                                    <StaffDashboard />
-                                </ProtectedRoute>
-                            }
-                        />
+                            <Route
+                                path="/staff/*"
+                                element={
+                                    <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                                        <StaffDashboard />
+                                    </ProtectedRoute>
+                                }
+                            />
 
-                        <Route
-                            path="/superadmin/*"
-                            element={
-                                <ProtectedRoute allowedRoles={['superadmin']}>
-                                    <SuperAdminDashboard />
-                                </ProtectedRoute>
-                            }
-                        />
+                            <Route
+                                path="/superadmin/*"
+                                element={
+                                    <ProtectedRoute allowedRoles={['superadmin']}>
+                                        <SuperAdminDashboard />
+                                    </ProtectedRoute>
+                                }
+                            />
 
-                        <Route
-                            path="/hod/*"
-                            element={
-                                <ProtectedRoute allowedRoles={['hod']}>
-                                    <HODDashboard />
-                                </ProtectedRoute>
-                            }
-                        />
+                            <Route
+                                path="/hod/*"
+                                element={
+                                    <ProtectedRoute allowedRoles={['hod']}>
+                                        <HODDashboard />
+                                    </ProtectedRoute>
+                                }
+                            />
 
-                        <Route path="/" element={<Navigate to="/login" />} />
+                            <Route path="/" element={<Navigate to="/login" />} />
 
-                        {/* 404 Page - catches all unmatched routes */}
-                        <Route path="*" element={<NotFound />} />
-                    </Routes>
+                            {/* 404 Page - catches all unmatched routes */}
+                            <Route path="*" element={<NotFound />} />
+                        </Routes>
+                    </ToastProvider>
                 </SocketProvider>
             </AuthProvider>
         </Router>

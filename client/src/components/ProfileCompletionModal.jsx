@@ -3,9 +3,11 @@ import * as faceapi from 'face-api.js';
 import Webcam from 'react-webcam';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from './Toast';
 
 export default function ProfileCompletionModal({ onComplete }) {
     const { user, setUser } = useAuth();
+    const toast = useToast();
     const webcamRef = useRef(null);
     const fileInputRef = useRef(null);
 
@@ -136,7 +138,7 @@ export default function ProfileCompletionModal({ onComplete }) {
             const missing = requiredFields.filter(field => !formData[field]);
 
             if (missing.length > 0) {
-                alert(`Please fill in all required fields: ${missing.join(', ')}`);
+                toast.warning(`Please fill: ${missing.join(', ')}`);
                 return;
             }
             setStep(2);
@@ -144,12 +146,12 @@ export default function ProfileCompletionModal({ onComplete }) {
             // Submit Profile
             // For verification mode, just need successful verification
             if (hasExistingPhoto && verificationStatus !== 'success') {
-                alert("Please verify your face matches your photo.");
+                toast.warning('Please verify your face matches your photo.');
                 return;
             }
             // For new photo mode, need face descriptor
             if (!hasExistingPhoto && !faceDescriptor) {
-                alert("Please capture or upload a photo with a visible face.");
+                toast.warning('Please capture a photo with a visible face.');
                 return;
             }
 
@@ -170,11 +172,11 @@ export default function ProfileCompletionModal({ onComplete }) {
                     setUser(updatedUser.data);
                 }
 
-                alert('Profile completed successfully!');
+                toast.success('Profile completed successfully!');
                 onComplete();
             } catch (error) {
                 console.error("Profile submission error:", error);
-                alert('Failed to save profile. Please try again.');
+                toast.error('Failed to save profile. Please try again.');
             } finally {
                 setSubmitting(false);
             }
