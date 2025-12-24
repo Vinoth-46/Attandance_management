@@ -627,26 +627,34 @@ const getAdvancedStats = async (req, res) => {
 };
 
 // @desc    Get available class filters (departments, years, sections)
-// @route   GET /api/admin/class-filters
+// @route   GET /api/admin/class-filters?department=CSE&year=First Year
 // @access  Staff/Admin
 const getClassFilters = async (req, res) => {
     try {
-        const { department } = req.query;
+        const { department, year } = req.query;
 
         // Get all distinct departments
         const departments = await User.distinct('department', { role: 'student', department: { $ne: null, $ne: '' } });
 
-        // If department is specified, get years and sections for that department
+        // Cascade: department → years
         let years = [];
-        let sections = [];
-
         if (department) {
             years = await User.distinct('year', { role: 'student', department, year: { $ne: null, $ne: '' } });
-            sections = await User.distinct('section', { role: 'student', department, section: { $ne: null, $ne: '' } });
         } else {
-            // Get all years and sections
             years = await User.distinct('year', { role: 'student', year: { $ne: null, $ne: '' } });
-            sections = await User.distinct('section', { role: 'student', section: { $ne: null, $ne: '' } });
+        }
+
+        // Cascade: department + year → sections
+        let sections = [];
+        if (department && year) {
+            sections = await User.distinct('section', {
+                role: 'student',
+                department,
+                year,
+                section: { $ne: null, $ne: '' }
+            });
+        } else if (department) {
+            sections = await User.distinct('section', { role: 'student', department, section: { $ne: null, $ne: '' } });
         }
 
         res.json({
