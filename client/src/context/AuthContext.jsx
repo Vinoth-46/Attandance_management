@@ -10,6 +10,16 @@ export const useLogout = () => {
     return logout;
 };
 
+// Get API base URL - handles HTTPS in production
+const getApiBaseUrl = () => {
+    // In production or HTTPS, use same origin
+    if (import.meta.env.PROD || window.location.protocol === 'https:') {
+        return '/api';
+    }
+    // Development: use port 5000
+    return `http://${window.location.hostname}:5000/api`;
+};
+
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -23,8 +33,7 @@ export const AuthProvider = ({ children }) => {
                 return;
             }
 
-            // Use dynamic URL logic or import api service (if possible, but keep self-contained here for safety)
-            const API_URL = `http://${window.location.hostname}:5000/api/auth/profile`;
+            const API_URL = `${getApiBaseUrl()}/auth/profile`;
 
             const { data } = await axios.get(API_URL, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -67,8 +76,7 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (username, password) => {
         try {
-            // Use dynamic hostname for mobile access
-            const API_URL = `http://${window.location.hostname}:5000/api/auth/login`;
+            const API_URL = `${getApiBaseUrl()}/auth/login`;
             const { data } = await axios.post(API_URL, { username, password });
 
             localStorage.setItem('token', data.token);
