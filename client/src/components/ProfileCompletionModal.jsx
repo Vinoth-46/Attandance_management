@@ -130,7 +130,7 @@ export default function ProfileCompletionModal({ onComplete }) {
                 // Convert Float32Array to regular array for JSON serialization
                 const descriptorArray = Array.from(faceDescriptor);
 
-                await api.post('/students/complete-profile', {
+                await api.put('/students/complete-profile', {
                     ...formData,
                     faceDescriptor: descriptorArray,
                     profilePhoto: previewUrl // Optional: send base64 photo to save
