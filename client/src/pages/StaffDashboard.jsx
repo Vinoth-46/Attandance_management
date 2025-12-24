@@ -1815,7 +1815,18 @@ export default function StaffDashboard() {
                                 </div>
                             </div>
 
-                            <div className="flex justify-end gap-3 mt-6">
+                            <div className="flex justify-between items-center gap-3 mt-6 pt-4 border-t">
+                                {/* Photo Permission Toggle */}
+                                <button
+                                    onClick={() => togglePhotoPermission(selectedStudent._id, selectedStudent.canUpdatePhoto)}
+                                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium ${selectedStudent.canUpdatePhoto
+                                        ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        }`}
+                                >
+                                    <CameraIcon className="h-4 w-4" />
+                                    {selectedStudent.canUpdatePhoto ? '📷 Photo Update: ON' : '📷 Photo Update: OFF'}
+                                </button>
                                 <button onClick={() => { setShowViewModal(false); setSelectedStudent(null); }} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm font-medium">
                                     Close
                                 </button>
