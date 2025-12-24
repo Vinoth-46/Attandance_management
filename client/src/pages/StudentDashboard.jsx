@@ -4,11 +4,12 @@ import api from '../services/api';
 import FaceAttendanceModal from '../components/FaceAttendanceModal';
 import ProfileCompletionModal from '../components/ProfileCompletionModal';
 import QRScannerModal from '../components/QRScannerModal';
+import PhotoUpdateModal from '../components/PhotoUpdateModal';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { useToast } from '../components/Toast';
 import Layout from '../components/Layout';
-import { PencilIcon } from '@heroicons/react/20/solid';
+import { PencilIcon, CameraIcon } from '@heroicons/react/20/solid';
 
 export default function StudentDashboard() {
     const { user } = useAuth();
@@ -30,6 +31,7 @@ export default function StudentDashboard() {
     const [markedSessionIds, setMarkedSessionIds] = useState([]); // Track sessions where attendance is marked
     const [showProfileCompletion, setShowProfileCompletion] = useState(false); // Profile completion modal
     const [showQRScanner, setShowQRScanner] = useState(false); // QR Scanner modal
+    const [showPhotoUpdate, setShowPhotoUpdate] = useState(false); // Photo update modal
 
     // Leave Form State
     const [leaveReason, setLeaveReason] = useState('');
@@ -313,14 +315,24 @@ export default function StudentDashboard() {
                                 <p className="text-sm text-gray-500">Roll No: {profile.rollNumber} | {profile.department}</p>
                             </div>
                         </div>
-                        {profile.canEditProfile && !isEditing && (
-                            <button onClick={() => setIsEditing(true)} className="inline-flex items-center gap-1 rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-500">
-                                <PencilIcon className="h-4 w-4" /> Edit Profile
-                            </button>
-                        )}
-                        {!profile.canEditProfile && (
-                            <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">🔒 Editing disabled by admin</span>
-                        )}
+                        <div className="flex items-center gap-2">
+                            {profile.canUpdatePhoto && (
+                                <button
+                                    onClick={() => setShowPhotoUpdate(true)}
+                                    className="inline-flex items-center gap-1 rounded-md bg-amber-500 px-3 py-2 text-sm font-semibold text-white hover:bg-amber-400"
+                                >
+                                    <CameraIcon className="h-4 w-4" /> Update Photo
+                                </button>
+                            )}
+                            {profile.canEditProfile && !isEditing && (
+                                <button onClick={() => setIsEditing(true)} className="inline-flex items-center gap-1 rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-500">
+                                    <PencilIcon className="h-4 w-4" /> Edit Profile
+                                </button>
+                            )}
+                            {!profile.canEditProfile && !profile.canUpdatePhoto && (
+                                <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">🔒 Editing disabled</span>
+                            )}
+                        </div>
                     </div>
 
                     {saveMsg && <p className={`mb-4 text-sm font-semibold ${saveMsg.includes('success') ? 'text-green-600' : 'text-red-600'}`}>{saveMsg}</p>}
@@ -472,6 +484,18 @@ export default function StudentDashboard() {
                     fetchActiveSessions();
                 }}
             />
+
+            {/* Photo Update Modal */}
+            {showPhotoUpdate && (
+                <PhotoUpdateModal
+                    currentPhoto={profile?.profilePhoto}
+                    onClose={() => setShowPhotoUpdate(false)}
+                    onSuccess={() => {
+                        fetchProfile();
+                        toast.info('To update photo again, contact your admin.');
+                    }}
+                />
+            )}
         </Layout>
     );
 }
