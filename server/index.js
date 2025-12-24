@@ -7,6 +7,8 @@ const rateLimit = require('express-rate-limit');
 const mongoSanitize = require('mongo-sanitize');
 
 const app = express();
+// Trust proxy is required for rate limiting behind a proxy (Render/Heroku/Nginx)
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5000;
 
 // ===== SECURITY: Validate critical environment variables =====
