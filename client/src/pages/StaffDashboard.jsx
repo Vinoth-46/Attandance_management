@@ -1613,20 +1613,103 @@ export default function StaffDashboard() {
                         <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
                             <h3 className="text-xl font-bold mb-6 text-gray-900">Add New Student</h3>
                             <form onSubmit={handleAddStudent} className="space-y-4">
-                                <input placeholder="Full Name" className="w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border" required value={newStudent.name} onChange={e => setNewStudent({ ...newStudent, name: e.target.value })} />
-                                <div className="grid grid-cols-2 gap-4">
-                                    <input placeholder="Roll Number" className="w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border" required value={newStudent.rollNumber} onChange={e => setNewStudent({ ...newStudent, rollNumber: e.target.value })} />
-                                    <input placeholder="DOB" type="date" className="w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border" required value={newStudent.dob} onChange={e => setNewStudent({ ...newStudent, dob: e.target.value })} />
+                                {/* Full Name */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                                    <input
+                                        placeholder="Enter student's full name"
+                                        className="w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border"
+                                        required
+                                        value={newStudent.name}
+                                        onChange={e => setNewStudent({ ...newStudent, name: e.target.value })}
+                                    />
                                 </div>
+
                                 <div className="grid grid-cols-2 gap-4">
-                                    <input placeholder="Department" className="w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border" value={newStudent.department} onChange={e => setNewStudent({ ...newStudent, department: e.target.value })} />
-                                    <input placeholder="Year" className="w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border" value={newStudent.year} onChange={e => setNewStudent({ ...newStudent, year: e.target.value })} />
+                                    {/* Roll Number */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Roll Number *</label>
+                                        <input
+                                            placeholder="e.g., 01, 02, 10"
+                                            className="w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border"
+                                            required
+                                            value={newStudent.rollNumber}
+                                            onChange={e => setNewStudent({ ...newStudent, rollNumber: e.target.value })}
+                                        />
+                                        <span className="text-xs text-gray-500">Use 01, 02 for single digits</span>
+                                    </div>
+
+                                    {/* DOB */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth *</label>
+                                        <input
+                                            type="date"
+                                            className="w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border"
+                                            required
+                                            value={newStudent.dob}
+                                            onChange={e => setNewStudent({ ...newStudent, dob: e.target.value })}
+                                        />
+                                        <span className="text-xs text-gray-500">This will be login password</span>
+                                    </div>
                                 </div>
-                                <input placeholder="Email" type="email" className="w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border" required value={newStudent.email} onChange={e => setNewStudent({ ...newStudent, email: e.target.value })} />
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    {/* Department */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                                        <input
+                                            placeholder="e.g., CSE, ECE, AI & DS"
+                                            className="w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border"
+                                            value={newStudent.department}
+                                            onChange={e => setNewStudent({ ...newStudent, department: e.target.value })}
+                                        />
+                                    </div>
+
+                                    {/* Year Dropdown */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                                        <select
+                                            className="w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border bg-white"
+                                            value={newStudent.year}
+                                            onChange={e => setNewStudent({ ...newStudent, year: e.target.value })}
+                                        >
+                                            <option value="">Select Year</option>
+                                            <option value="First Year">First Year</option>
+                                            <option value="Second Year">Second Year</option>
+                                            <option value="Third Year">Third Year</option>
+                                            <option value="Final Year">Final Year</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Section */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
+                                    <input
+                                        placeholder="e.g., A, B, C (optional)"
+                                        className="w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border"
+                                        value={newStudent.section}
+                                        onChange={e => setNewStudent({ ...newStudent, section: e.target.value })}
+                                    />
+                                </div>
+
+                                {/* Email */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                                    <input
+                                        placeholder="student@example.com"
+                                        type="email"
+                                        className="w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border"
+                                        required
+                                        value={newStudent.email}
+                                        onChange={e => setNewStudent({ ...newStudent, email: e.target.value })}
+                                    />
+                                </div>
+
                                 <div className="flex justify-end gap-3 mt-6">
                                     <button type="button" onClick={() => setShowAddModal(false)} disabled={addingStudent} className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium disabled:opacity-50">Cancel</button>
                                     <button type="submit" disabled={addingStudent} className="px-4 py-2 bg-brand-600 text-white rounded-md hover:bg-brand-500 text-sm font-medium disabled:opacity-50 disabled:cursor-wait min-w-[80px]">
-                                        {addingStudent ? 'Creating...' : 'Create'}
+                                        {addingStudent ? 'Creating...' : 'Create Student'}
                                     </button>
                                 </div>
                             </form>
