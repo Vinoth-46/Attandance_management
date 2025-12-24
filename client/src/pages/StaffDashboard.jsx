@@ -77,6 +77,8 @@ export default function StaffDashboard() {
         name: '', rollNumber: '', dob: '', department: '',
         year: '', section: '', email: '', phone: ''
     });
+    const [addingStudent, setAddingStudent] = useState(false); // Prevent rapid clicks
+    const [editingStudent, setEditingStudent] = useState(false); // Prevent rapid clicks
 
     // Staff Management States (Super Admin)
     const [staffList, setStaffList] = useState([]);
@@ -517,6 +519,8 @@ export default function StaffDashboard() {
 
     const handleAddStudent = async (e) => {
         e.preventDefault();
+        if (addingStudent) return; // Prevent rapid clicks
+        setAddingStudent(true);
         try {
             await api.post('/admin/students', newStudent);
             setShowAddModal(false);
@@ -524,11 +528,17 @@ export default function StaffDashboard() {
             if (user?.isFacultyAdvisor) fetchMyClassData();
             setNewStudent({ name: '', rollNumber: '', dob: '', department: '', year: '', section: '', email: '', phone: '' });
             alert('Student added successfully!');
-        } catch (err) { alert(err.response?.data?.message || err.message); }
+        } catch (err) {
+            alert(err.response?.data?.message || err.message);
+        } finally {
+            setAddingStudent(false);
+        }
     };
 
     const handleEditStudent = async (e) => {
         e.preventDefault();
+        if (editingStudent) return; // Prevent rapid clicks
+        setEditingStudent(true);
         try {
             await api.put(`/admin/students/${selectedStudent._id}`, selectedStudent);
             setShowEditModal(false);
@@ -536,7 +546,11 @@ export default function StaffDashboard() {
             fetchStudents();
             if (user?.isFacultyAdvisor) fetchMyClassData(); // Refresh My Class data too
             alert('Student updated successfully!');
-        } catch (err) { alert(err.response?.data?.message || err.message); }
+        } catch (err) {
+            alert(err.response?.data?.message || err.message);
+        } finally {
+            setEditingStudent(false);
+        }
     };
 
     const handleApproveLeave = async (id) => {
@@ -1610,8 +1624,10 @@ export default function StaffDashboard() {
                                 </div>
                                 <input placeholder="Email" type="email" className="w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border" required value={newStudent.email} onChange={e => setNewStudent({ ...newStudent, email: e.target.value })} />
                                 <div className="flex justify-end gap-3 mt-6">
-                                    <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium">Cancel</button>
-                                    <button type="submit" className="px-4 py-2 bg-brand-600 text-white rounded-md hover:bg-brand-500 text-sm font-medium">Create</button>
+                                    <button type="button" onClick={() => setShowAddModal(false)} disabled={addingStudent} className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium disabled:opacity-50">Cancel</button>
+                                    <button type="submit" disabled={addingStudent} className="px-4 py-2 bg-brand-600 text-white rounded-md hover:bg-brand-500 text-sm font-medium disabled:opacity-50 disabled:cursor-wait min-w-[80px]">
+                                        {addingStudent ? 'Creating...' : 'Create'}
+                                    </button>
                                 </div>
                             </form>
                         </div>

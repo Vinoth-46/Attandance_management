@@ -123,6 +123,9 @@ export default function ProfileCompletionModal({ onComplete }) {
     };
 
     const handleSubmit = async () => {
+        // Prevent rapid clicking
+        if (submitting) return;
+
         if (step === 1) {
             // Validate Step 1
             const requiredFields = ['phone', 'address', 'city', 'state', 'fatherName', 'parentPhone'];
