@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
 const bcrypt = require('bcryptjs');
-const XLSX = require('xlsx');
+const ExcelJS = require('exceljs');
 
 // Helper for Euclidean Distance
 const getEuclideanDistance = (a, b) => {
@@ -333,11 +333,39 @@ const bulkImportStudents = async (req, res) => {
             return res.status(400).json({ message: 'No file uploaded' });
         }
 
-        // Parse Excel file
-        const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const data = XLSX.utils.sheet_to_json(worksheet);
+        // Parse Excel file using exceljs
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(req.file.buffer);
+        const worksheet = workbook.worksheets[0];
+
+        if (!worksheet) {
+            return res.status(400).json({ message: 'Excel file is empty' });
+        }
+
+        // Convert worksheet to JSON-like array
+        const data = [];
+        const headers = [];
+
+        worksheet.eachRow((row, rowNumber) => {
+            if (rowNumber === 1) {
+                // First row is headers
+                row.eachCell((cell, colNumber) => {
+                    headers[colNumber] = cell.value?.toString() || '';
+                });
+            } else {
+                // Data rows
+                const rowData = {};
+                row.eachCell((cell, colNumber) => {
+                    const header = headers[colNumber];
+                    if (header) {
+                        rowData[header] = cell.value;
+                    }
+                });
+                if (Object.keys(rowData).length > 0) {
+                    data.push(rowData);
+                }
+            }
+        });
 
         if (data.length === 0) {
             return res.status(400).json({ message: 'Excel file is empty' });

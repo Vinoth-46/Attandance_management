@@ -1,6 +1,6 @@
 const Attendance = require('../models/Attendance');
 const User = require('../models/User');
-const XLSX = require('xlsx');
+const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
 
 // @desc    Get attendance summary report by date range
@@ -131,8 +131,38 @@ const exportToExcel = async (req, res) => {
 
         const attendanceRecords = await Attendance.find(attendanceQuery).sort({ date: 1 });
 
-        // Create summary data for Excel
-        const excelData = students.map(student => {
+        // Create workbook using exceljs
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'Attendance Management System';
+        workbook.created = new Date();
+
+        const worksheet = workbook.addWorksheet('Attendance Report');
+
+        // Define columns
+        worksheet.columns = [
+            { header: 'Roll Number', key: 'rollNumber', width: 15 },
+            { header: 'Name', key: 'name', width: 25 },
+            { header: 'Department', key: 'department', width: 15 },
+            { header: 'Year', key: 'year', width: 8 },
+            { header: 'Section', key: 'section', width: 10 },
+            { header: 'Present', key: 'present', width: 10 },
+            { header: 'Absent', key: 'absent', width: 10 },
+            { header: 'Half Day', key: 'halfDay', width: 10 },
+            { header: 'Leave', key: 'leave', width: 10 },
+            { header: 'Total Days', key: 'total', width: 12 },
+            { header: 'Percentage', key: 'percentage', width: 12 }
+        ];
+
+        // Style header row
+        worksheet.getRow(1).font = { bold: true };
+        worksheet.getRow(1).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFE0E0E0' }
+        };
+
+        // Add data rows
+        students.forEach(student => {
             const studentAttendance = attendanceRecords.filter(
                 a => a.student.toString() === student._id.toString()
             );
@@ -143,44 +173,23 @@ const exportToExcel = async (req, res) => {
             const leave = studentAttendance.filter(a => a.status === 'Leave').length;
             const total = present + absent + halfDay + leave;
 
-            return {
-                'Roll Number': student.rollNumber,
-                'Name': student.name,
-                'Department': student.department,
-                'Year': student.year,
-                'Section': student.section,
-                'Present': present,
-                'Absent': absent,
-                'Half Day': halfDay,
-                'Leave': leave,
-                'Total Days': total,
-                'Percentage': total > 0 ? `${((present + halfDay * 0.5) / total * 100).toFixed(2)}%` : '0%'
-            };
+            worksheet.addRow({
+                rollNumber: student.rollNumber,
+                name: student.name,
+                department: student.department,
+                year: student.year,
+                section: student.section,
+                present,
+                absent,
+                halfDay,
+                leave,
+                total,
+                percentage: total > 0 ? `${((present + halfDay * 0.5) / total * 100).toFixed(2)}%` : '0%'
+            });
         });
 
-        // Create workbook and worksheet
-        const workbook = XLSX.utils.book_new();
-        const worksheet = XLSX.utils.json_to_sheet(excelData);
-
-        // Set column widths
-        worksheet['!cols'] = [
-            { wch: 15 }, // Roll Number
-            { wch: 25 }, // Name
-            { wch: 15 }, // Department
-            { wch: 8 },  // Year
-            { wch: 10 }, // Section
-            { wch: 10 }, // Present
-            { wch: 10 }, // Absent
-            { wch: 10 }, // Half Day
-            { wch: 10 }, // Leave
-            { wch: 12 }, // Total Days
-            { wch: 12 }  // Percentage
-        ];
-
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance Report');
-
         // Generate buffer
-        const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+        const buffer = await workbook.xlsx.writeBuffer();
 
         // Set response headers
         const filename = `Attendance_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
