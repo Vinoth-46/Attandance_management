@@ -51,12 +51,11 @@ export const SocketProvider = ({ children }) => {
             // Listen for force logout (single-session enforcement)
             newSocket.on('force_logout', (data) => {
                 console.log('Force logout received:', data);
-                alert(data.message || 'You have been logged out.');
-                // Clear local storage and reload to login page
+                // Clear local storage and redirect to login page
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
                 localStorage.removeItem('sessionToken');
-                window.location.href = '/login';
+                window.location.href = '/login?msg=logged_out';
             });
 
             // Listen for session events

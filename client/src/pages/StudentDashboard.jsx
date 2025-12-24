@@ -6,14 +6,17 @@ import ProfileCompletionModal from '../components/ProfileCompletionModal';
 import QRScannerModal from '../components/QRScannerModal';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
+import { useToast } from '../components/Toast';
 import Layout from '../components/Layout';
 import { PencilIcon } from '@heroicons/react/20/solid';
 
 export default function StudentDashboard() {
     const { user } = useAuth();
     const { sessionNotification, dismissNotification } = useSocket();
+    const toast = useToast();
     const [searchParams] = useSearchParams();
     const view = searchParams.get('view') || 'dashboard';
+    const [savingProfile, setSavingProfile] = useState(false);
 
     const [stats, setStats] = useState({ logs: [], totalPresent: 0 });
     const [myLeaves, setMyLeaves] = useState([]);
@@ -137,14 +140,17 @@ export default function StudentDashboard() {
 
     const handleProfileUpdate = async (e) => {
         e.preventDefault();
+        if (savingProfile) return; // Prevent rapid clicks
+        setSavingProfile(true);
         try {
             await api.put('/auth/profile', editData);
-            setSaveMsg('Profile updated successfully!');
+            toast.success('Profile updated successfully!');
             setIsEditing(false);
             fetchProfile();
-            setTimeout(() => setSaveMsg(''), 3000);
         } catch (err) {
-            setSaveMsg(err.response?.data?.message || 'Failed to update profile');
+            toast.error(err.response?.data?.message || 'Failed to update profile');
+        } finally {
+            setSavingProfile(false);
         }
     };
 
@@ -366,8 +372,10 @@ export default function StudentDashboard() {
                                 </div>
                             </div>
                             <div className="flex justify-end gap-3 mt-6">
-                                <button type="button" onClick={() => { setIsEditing(false); setEditData(profile); }} className="px-4 py-2 bg-white text-gray-700 border rounded-md hover:bg-gray-50 text-sm font-medium">Cancel</button>
-                                <button type="submit" className="px-4 py-2 bg-brand-600 text-white rounded-md hover:bg-brand-500 text-sm font-medium">Save Changes</button>
+                                <button type="button" onClick={() => { setIsEditing(false); setEditData(profile); }} className="px-4 py-2 bg-white text-gray-700 border rounded-md hover:bg-gray-50 text-sm font-medium" disabled={savingProfile}>Cancel</button>
+                                <button type="submit" disabled={savingProfile} className="px-4 py-2 bg-brand-600 text-white rounded-md hover:bg-brand-500 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                                    {savingProfile ? 'Saving...' : 'Save Changes'}
+                                </button>
                             </div>
                         </form>
                     ) : (
