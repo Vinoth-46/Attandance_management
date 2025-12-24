@@ -123,6 +123,7 @@ export default function StaffDashboard() {
     const [sessionReports, setSessionReports] = useState([]);
     const [expandedSections, setExpandedSections] = useState({});
     const [reportsLoading, setReportsLoading] = useState(false);
+    const [togglingStudentId, setTogglingStudentId] = useState(null); // For optimistic toggle update
 
     // Export Handlers
     const handleExportExcel = async () => {
@@ -696,12 +697,27 @@ export default function StaffDashboard() {
     };
 
     const toggleEditPermission = async (student) => {
+        // Prevent rapid clicking
+        if (togglingStudentId === student._id) return;
+
+        // Optimistic update - immediately toggle in UI
+        const previousValue = student.canEditProfile;
+        setTogglingStudentId(student._id);
+        setStudents(prev => prev.map(s =>
+            s._id === student._id ? { ...s, canEditProfile: !s.canEditProfile } : s
+        ));
+
         try {
-            const { data } = await api.put(`/admin/students/${student._id}/permission`);
-            alert(data.message);
-            fetchStudents();
+            await api.put(`/admin/students/${student._id}/permission`);
+            // Success - keep the optimistic update
         } catch (err) {
+            // Revert on error
+            setStudents(prev => prev.map(s =>
+                s._id === student._id ? { ...s, canEditProfile: previousValue } : s
+            ));
             alert(err.response?.data?.message || err.message);
+        } finally {
+            setTogglingStudentId(null);
         }
     };
 
@@ -870,10 +886,11 @@ export default function StaffDashboard() {
                                         <td className="whitespace-nowrap px-3 py-4 text-sm">
                                             <button
                                                 onClick={() => toggleEditPermission(student)}
-                                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 ${student.canEditProfile ? 'bg-green-500' : 'bg-gray-300'}`}
+                                                disabled={togglingStudentId === student._id}
+                                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 ${togglingStudentId === student._id ? 'opacity-50 cursor-wait' : ''} ${student.canEditProfile ? 'bg-green-500' : 'bg-gray-300'}`}
                                                 role="switch"
                                                 aria-checked={student.canEditProfile}
-                                                title={student.canEditProfile ? 'Disable Edit Permission' : 'Enable Edit Permission'}
+                                                title={student.canEditProfile ? 'Click to disable' : 'Click to enable'}
                                             >
                                                 <span
                                                     className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${student.canEditProfile ? 'translate-x-5' : 'translate-x-0'}`}
