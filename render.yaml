@@ -1,0 +1,28 @@
+# Render Blueprint for multi-service deployment
+# Deploy both Node.js backend and Python face service
+
+services:
+  # Main Node.js Backend + React Frontend
+  - type: web
+    name: attendance-management
+    runtime: node
+    buildCommand: npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+
+  # Python Face Verification Service
+  - type: web
+    name: face-service
+    runtime: python
+    rootDir: face-service
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
