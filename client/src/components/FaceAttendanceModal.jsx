@@ -19,6 +19,15 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
         let cancelled = false;
 
         const loadModels = async () => {
+            // Safe Backend Initialization
+            if (!faceapi.tf.getBackend()) {
+                await faceapi.tf.setBackend('webgl').catch(err => {
+                    console.warn('WebGL backend failed, falling back to CPU', err);
+                    return faceapi.tf.setBackend('cpu');
+                });
+            }
+            await faceapi.tf.ready();
+
             try {
                 setStatus('Loading face models...');
                 const MODEL_URL = '/models';

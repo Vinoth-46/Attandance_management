@@ -278,6 +278,7 @@ export default function StudentDashboard() {
                             <thead className="bg-gray-50">
                                 <tr>
                                     <th className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Date</th>
+                                    <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Session/Period</th>
                                     <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Time</th>
                                     <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Status</th>
                                 </tr>
@@ -286,6 +287,7 @@ export default function StudentDashboard() {
                                 {stats.logs.map((log) => (
                                     <tr key={log._id}>
                                         <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">{new Date(log.date).toLocaleDateString()}</td>
+                                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-700 font-medium">{log.period || 'General'}</td>
                                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{new Date(log.time).toLocaleTimeString()}</td>
                                         <td className="whitespace-nowrap px-3 py-4 text-sm"><span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${log.status === 'Present' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{log.status}</span></td>
                                     </tr>
