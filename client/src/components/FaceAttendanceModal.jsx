@@ -7,12 +7,15 @@ import toast from 'react-hot-toast';
 export default function FaceAttendanceModal({ onClose, onSuccess }) {
     const webcamRef = useRef(null);
     const [loading, setLoading] = useState(true);
-    const [status, setStatus] = useState('Loading...');
-    const [phase, setPhase] = useState('loading'); // loading, ready, smile, verifying, success
-    const [smileScore, setSmileScore] = useState(0);
+    const [loadProgress, setLoadProgress] = useState(0);
+    const [status, setStatus] = useState('Loading face models...');
+    const [phase, setPhase] = useState('loading'); // loading, ready, detecting, verifying, success
     const [showQRFallback, setShowQRFallback] = useState(false);
+    const [faceDetected, setFaceDetected] = useState(false);
     const detectionRef = useRef(null);
     const checkIntervalRef = useRef(null);
+    const movementCountRef = useRef(0);
+    const lastPositionRef = useRef(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -20,19 +23,29 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
         const loadModels = async () => {
             try {
                 const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
-                await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-                await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-                await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
-                await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
 
-                if (!cancelled) {
-                    setStatus('Tap "Start" when ready');
-                    setPhase('ready');
-                    setLoading(false);
-                }
+                // Load models one by one with progress
+                setLoadProgress(20);
+                await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+                if (cancelled) return;
+
+                setLoadProgress(50);
+                await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+                if (cancelled) return;
+
+                setLoadProgress(80);
+                await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+                if (cancelled) return;
+
+                setLoadProgress(100);
+                setStatus('Ready! Tap "Verify Face"');
+                setPhase('ready');
+                setLoading(false);
             } catch (err) {
-                console.error(err);
-                if (!cancelled) setStatus('Failed to load. Refresh to retry.');
+                console.error('Model load error:', err);
+                if (!cancelled) {
+                    setStatus('Failed to load. Check internet and refresh.');
+                }
             }
         };
 
@@ -43,12 +56,11 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
         };
     }, []);
 
-    const startLivenessCheck = () => {
-        setPhase('smile');
-        setStatus('😊 SMILE at the camera!');
-        setSmileScore(0);
-
-        let smileDetectedCount = 0;
+    const startDetection = () => {
+        setPhase('detecting');
+        setStatus('� Look at camera and move slightly...');
+        movementCountRef.current = 0;
+        lastPositionRef.current = null;
 
         checkIntervalRef.current = setInterval(async () => {
             if (!webcamRef.current) return;
@@ -59,58 +71,66 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
 
                 const img = await faceapi.fetchImage(screenshot);
                 const detection = await faceapi
-                    .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5 }))
+                    .detectSingleFace(img)
                     .withFaceLandmarks()
-                    .withFaceDescriptor()
-                    .withFaceExpressions();
+                    .withFaceDescriptor();
 
                 if (!detection) {
-                    setStatus('👀 Position your face in frame');
+                    setFaceDetected(false);
+                    setStatus('👀 No face detected. Look at camera.');
                     return;
                 }
 
-                // Store detection for later
-                detectionRef.current = detection;
+                setFaceDetected(true);
+                detectionRef.current = { detection, screenshot };
 
-                // Check for smile
-                const happy = detection.expressions.happy || 0;
-                setSmileScore(Math.round(happy * 100));
+                // Get face position
+                const nose = detection.landmarks.getNose()[3];
+                const currentPos = { x: nose.x, y: nose.y };
 
-                if (happy > 0.5) {
-                    smileDetectedCount++;
-                    setStatus(`� Great! Keep smiling... (${smileDetectedCount}/3)`);
+                // Check for movement (liveness)
+                if (lastPositionRef.current) {
+                    const dx = Math.abs(currentPos.x - lastPositionRef.current.x);
+                    const dy = Math.abs(currentPos.y - lastPositionRef.current.y);
 
-                    // Need 3 consecutive smile detections
-                    if (smileDetectedCount >= 3) {
-                        clearInterval(checkIntervalRef.current);
-                        submitAttendance(detection);
+                    // Any small movement counts
+                    if (dx > 2 || dy > 2) {
+                        movementCountRef.current++;
+                        setStatus(`🔍 Good! Keep looking... (${movementCountRef.current}/5)`);
                     }
-                } else {
-                    smileDetectedCount = 0; // Reset if stopped smiling
-                    setStatus('😊 SMILE bigger!');
+                }
+
+                lastPositionRef.current = currentPos;
+
+                // Need 5 movement detections (proves it's not a static photo)
+                if (movementCountRef.current >= 5) {
+                    clearInterval(checkIntervalRef.current);
+                    submitAttendance();
                 }
             } catch (err) {
                 console.error('Detection error:', err);
             }
-        }, 300); // Check every 300ms
+        }, 400);
 
-        // Timeout after 20 seconds
+        // Timeout after 15 seconds
         setTimeout(() => {
-            if (phase === 'smile') {
+            if (phase === 'detecting') {
                 clearInterval(checkIntervalRef.current);
                 setStatus('⏱️ Timeout. Try again.');
                 setPhase('ready');
             }
-        }, 20000);
+        }, 15000);
     };
 
-    const submitAttendance = async (detection) => {
+    const submitAttendance = async () => {
+        if (!detectionRef.current) return;
+
         setPhase('verifying');
         setStatus('📍 Getting location...');
 
         try {
             const location = await new Promise((resolve, reject) => {
-                if (!navigator.geolocation) reject(new Error('No GPS'));
+                if (!navigator.geolocation) reject(new Error('GPS not available'));
                 navigator.geolocation.getCurrentPosition(
                     (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
                     (err) => reject(err),
@@ -118,13 +138,11 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
                 );
             });
 
-            setStatus('✅ Submitting...');
-
-            const photo = webcamRef.current.getScreenshot();
+            setStatus('✅ Submitting attendance...');
 
             await api.post('/attendance/mark', {
-                faceDescriptor: Array.from(detection.descriptor),
-                capturedPhoto: photo,
+                faceDescriptor: Array.from(detectionRef.current.detection.descriptor),
+                capturedPhoto: detectionRef.current.screenshot,
                 location,
                 livenessScore: 1.0
             });
@@ -162,7 +180,11 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
                     {loading ? (
                         <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800">
                             <div className="animate-spin rounded-full h-10 w-10 border-4 border-indigo-500 border-t-transparent mb-3"></div>
-                            <p className="text-white text-sm">{status}</p>
+                            <p className="text-white text-sm mb-2">{status}</p>
+                            <div className="w-48 bg-gray-600 rounded-full h-2">
+                                <div className="bg-indigo-500 h-2 rounded-full transition-all" style={{ width: `${loadProgress}%` }}></div>
+                            </div>
+                            <p className="text-gray-400 text-xs mt-1">{loadProgress}%</p>
                         </div>
                     ) : (
                         <>
@@ -175,21 +197,26 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
                                 mirrored={true}
                             />
 
-                            {/* Smile meter */}
-                            {phase === 'smile' && (
+                            {/* Face detection indicator */}
+                            {phase === 'detecting' && (
+                                <div className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-bold ${faceDetected ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
+                                    {faceDetected ? '✓ Face OK' : '✗ No Face'}
+                                </div>
+                            )}
+
+                            {/* Progress indicator */}
+                            {phase === 'detecting' && (
                                 <div className="absolute bottom-2 left-2 right-2">
-                                    <div className="bg-black/50 rounded-lg p-2">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className="text-2xl">😊</span>
-                                            <div className="flex-1 bg-gray-600 rounded-full h-3">
+                                    <div className="bg-black/60 rounded-lg p-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-white text-xs">Liveness:</span>
+                                            <div className="flex-1 bg-gray-600 rounded-full h-2">
                                                 <div
-                                                    className={`h-3 rounded-full transition-all ${smileScore > 50 ? 'bg-green-500' : 'bg-yellow-500'}`}
-                                                    style={{ width: `${smileScore}%` }}
+                                                    className="bg-green-500 h-2 rounded-full transition-all"
+                                                    style={{ width: `${(movementCountRef.current / 5) * 100}%` }}
                                                 ></div>
                                             </div>
-                                            <span className="text-white text-sm font-bold">{smileScore}%</span>
                                         </div>
-                                        <p className="text-white text-xs text-center">Smile until meter reaches 50%+</p>
                                     </div>
                                 </div>
                             )}
@@ -197,8 +224,8 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
                     )}
                 </div>
 
-                <p className={`text-center font-semibold mb-4 ${status.includes('❌') || status.includes('Timeout') ? 'text-red-600'
-                        : status.includes('✅') ? 'text-green-600'
+                <p className={`text-center font-semibold mb-4 ${status.includes('❌') || status.includes('Timeout') || status.includes('No face') ? 'text-red-600'
+                        : status.includes('✅') || status.includes('Good') ? 'text-green-600'
                             : status.includes('📍') ? 'text-orange-500'
                                 : 'text-indigo-600'
                     }`}>
@@ -217,15 +244,15 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
                     </button>
 
                     {phase === 'ready' && (
-                        <button onClick={startLivenessCheck} className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-500">
-                            ▶️ Start
+                        <button onClick={startDetection} className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-500">
+                            ▶️ Verify Face
                         </button>
                     )}
                 </div>
 
                 {phase === 'ready' && !loading && (
                     <p className="text-xs text-gray-400 text-center mt-3">
-                        Just smile at the camera - easy! 😊
+                        Look at camera and move your head slightly
                     </p>
                 )}
             </div>
