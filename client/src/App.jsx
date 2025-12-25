@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
@@ -9,6 +10,7 @@ import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import HODDashboard from './pages/HODDashboard';
 import NotFound from './pages/NotFound';
 import Maintenance from './pages/Maintenance';
+import { initializeFaceApi } from './utils/faceApiInitializer';
 
 // Check if maintenance mode is enabled via environment variable
 // Set VITE_MAINTENANCE_MODE=true in Render environment variables to enable
@@ -37,6 +39,11 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 };
 
 function App() {
+    // Initialize AI Backend aggressively on startup
+    useEffect(() => {
+        initializeFaceApi();
+    }, []);
+
     // If maintenance mode is enabled, show maintenance page for all routes
     if (MAINTENANCE_MODE) {
         return (
