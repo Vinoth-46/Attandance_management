@@ -1071,10 +1071,43 @@ export default function StaffDashboard() {
                     <div className="space-y-6">
                         <div className="bg-white p-4 rounded-lg shadow ring-1 ring-black ring-opacity-5">
                             <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-                                {/* Simplified Filter Inputs */}
-                                <select value={classFilter.department} onChange={e => setClassFilter({ ...classFilter, department: e.target.value })} className="border p-2 rounded"><option value="">Dept</option>{classFilters.departments.map(d => <option key={d}>{d}</option>)}</select>
-                                <select value={classFilter.year} onChange={e => setClassFilter({ ...classFilter, year: e.target.value })} className="border p-2 rounded"><option value="">Year</option>{classFilters.years.map(y => <option key={y}>{y}</option>)}</select>
-                                <select value={classFilter.section} onChange={e => setClassFilter({ ...classFilter, section: e.target.value })} className="border p-2 rounded"><option value="">Section</option>{classFilters.sections.map(s => <option key={s}>{s}</option>)}</select>
+                                {/* Cascading Filter Inputs */}
+                                <select
+                                    value={classFilter.department}
+                                    onChange={e => setClassFilter({ ...classFilter, department: e.target.value, year: '', section: '' })}
+                                    className="border p-2 rounded"
+                                >
+                                    <option value="">Select Dept</option>
+                                    {classFilters.departments?.map(d => <option key={d}>{d}</option>)}
+                                </select>
+                                <select
+                                    value={classFilter.year}
+                                    onChange={e => setClassFilter({ ...classFilter, year: e.target.value, section: '' })}
+                                    className="border p-2 rounded"
+                                    disabled={!classFilter.department}
+                                >
+                                    <option value="">Select Year</option>
+                                    {/* Show only years available for selected department */}
+                                    {classFilter.department && classFilters.hierarchy?.[classFilter.department] &&
+                                        Object.keys(classFilters.hierarchy[classFilter.department]).sort().map(y =>
+                                            <option key={y}>{y}</option>
+                                        )
+                                    }
+                                </select>
+                                <select
+                                    value={classFilter.section}
+                                    onChange={e => setClassFilter({ ...classFilter, section: e.target.value })}
+                                    className="border p-2 rounded"
+                                    disabled={!classFilter.year}
+                                >
+                                    <option value="">Select Section</option>
+                                    {/* Show only sections available for selected department+year */}
+                                    {classFilter.department && classFilter.year &&
+                                        classFilters.hierarchy?.[classFilter.department]?.[classFilter.year]?.map(s =>
+                                            <option key={s}>{s}</option>
+                                        )
+                                    }
+                                </select>
                                 <input value={classFilter.period} onChange={e => setClassFilter({ ...classFilter, period: e.target.value })} placeholder="Period" className="border p-2 rounded" />
                                 <input type="date" value={classFilter.date} onChange={e => setClassFilter({ ...classFilter, date: e.target.value })} className="border p-2 rounded" />
                                 <button onClick={loadClassStudents} className="bg-brand-600 text-white rounded p-2">Load</button>

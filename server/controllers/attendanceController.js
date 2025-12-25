@@ -417,19 +417,54 @@ const getClassAttendanceStatus = async (req, res) => {
     }
 };
 
-// @desc    Get unique departments, years, sections for dropdowns
+// @desc    Get unique departments, years, sections for dropdowns (hierarchical)
 // @route   GET /api/attendance/class/filters
 // @access  Staff/Admin
 const getClassFilters = async (req, res) => {
     try {
-        const departments = await User.distinct('department', { role: 'student' });
-        const years = await User.distinct('year', { role: 'student' });
-        const sections = await User.distinct('section', { role: 'student' });
+        // Get all students with department, year, section
+        const students = await User.find({ role: 'student' })
+            .select('department year section')
+            .lean();
+
+        // Build hierarchical structure: department -> years -> sections
+        const hierarchy = {};
+
+        students.forEach(s => {
+            if (!s.department) return;
+
+            if (!hierarchy[s.department]) {
+                hierarchy[s.department] = {};
+            }
+
+            if (s.year && !hierarchy[s.department][s.year]) {
+                hierarchy[s.department][s.year] = new Set();
+            }
+
+            if (s.year && s.section) {
+                hierarchy[s.department][s.year].add(s.section);
+            }
+        });
+
+        // Convert Sets to arrays
+        const hierarchyResult = {};
+        Object.keys(hierarchy).sort().forEach(dept => {
+            hierarchyResult[dept] = {};
+            Object.keys(hierarchy[dept]).sort().forEach(year => {
+                hierarchyResult[dept][year] = Array.from(hierarchy[dept][year]).sort();
+            });
+        });
+
+        // Also return flat lists for backward compatibility
+        const departments = Object.keys(hierarchyResult).sort();
+        const years = [...new Set(students.map(s => s.year).filter(Boolean))].sort();
+        const sections = [...new Set(students.map(s => s.section).filter(Boolean))].sort();
 
         res.json({
-            departments: departments.filter(Boolean).sort(),
-            years: years.filter(Boolean).sort(),
-            sections: sections.filter(Boolean).sort()
+            departments,
+            years,
+            sections,
+            hierarchy: hierarchyResult  // New: hierarchical data for cascading
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
