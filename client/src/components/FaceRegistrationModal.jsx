@@ -19,10 +19,13 @@ export default function FaceRegistrationModal({ student, onClose, onSuccess }) {
             try {
                 console.log('Starting model load from:', MODEL_URL);
 
-                // Use top-level loading functions which are sometimes safer
-                await faceapi.loadSsdMobilenetv1Model(MODEL_URL);
-                await faceapi.loadFaceLandmarkModel(MODEL_URL);
-                await faceapi.loadFaceRecognitionModel(MODEL_URL);
+                // Ensure backend is ready (Crucial fix for 'void 0' error)
+                await faceapi.tf.ready();
+
+                // Load models one by one
+                await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+                await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+                await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
 
                 console.log('Models loaded successfully');
                 setStatus('Ready. Choose webcam or upload a photo.');
