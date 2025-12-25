@@ -15,14 +15,3 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
-
-  # Python Face Verification Service
-  - type: web
-    name: face-service
-    runtime: python
-    rootDir: face-service
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
