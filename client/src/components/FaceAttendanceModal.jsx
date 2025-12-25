@@ -14,24 +14,12 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
     useEffect(() => {
         const loadModels = async () => {
             try {
-                // Initialize TensorFlow backend first
-                if (faceapi.tf) {
-                    try {
-                        await faceapi.tf.setBackend('webgl');
-                        await faceapi.tf.ready();
-                    } catch (e) {
-                        console.log('WebGL failed, trying CPU');
-                        await faceapi.tf.setBackend('cpu');
-                        await faceapi.tf.ready();
-                    }
-                }
-
                 const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
-                await Promise.all([
-                    faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-                ]);
+                // Load models one at a time to avoid memory issues on mobile
+                await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+                await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+                await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+
                 setStatus('Ready! Tap "Verify & Mark"');
                 setLoading(false);
             } catch (err) {
