@@ -44,12 +44,11 @@ export default function ProfileCompletionModal({ onComplete }) {
             try {
                 setLoading(true);
                 setStatus('Loading AI models...');
-                const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
-                await Promise.all([
-                    faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
-                ]);
+                const MODEL_URL = '/models';
+                // Load sequentially
+                await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+                await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+                await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
                 setStatus('Ready.');
                 setLoading(false);
             } catch (error) {
