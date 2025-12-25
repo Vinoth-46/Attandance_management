@@ -78,50 +78,34 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
     const handleCapture = async () => {
         if (webcamRef.current && !loading) {
             setVerifying(true);
-            setStatus('Performing liveness check (1/3)...');
+            setStatus('Verifying face...');
 
             try {
-                const samples = [];
+                setLivenessStep(1);
 
-                // Take 3 samples for liveness detection
-                for (let i = 0; i < 3; i++) {
-                    setLivenessStep(i + 1);
-                    setStatus(`Liveness check (${i + 1}/3)... Hold still`);
+                // Single fast capture for liveness
+                const imageSrc = webcamRef.current.getScreenshot();
+                const img = await faceapi.fetchImage(imageSrc);
 
-                    await new Promise(resolve => setTimeout(resolve, 500)); // Wait between captures
+                const detection = await faceapi
+                    .detectSingleFace(img)
+                    .withFaceLandmarks()
+                    .withFaceDescriptor()
+                    .withFaceExpressions();
 
-                    const imageSrc = webcamRef.current.getScreenshot();
-                    const img = await faceapi.fetchImage(imageSrc);
-
-                    const detection = await faceapi
-                        .detectSingleFace(img)
-                        .withFaceLandmarks()
-                        .withFaceDescriptor()
-                        .withFaceExpressions();
-
-                    if (detection) {
-                        samples.push(detection);
-                    }
-                }
-
-                if (samples.length === 0) {
+                if (!detection) {
                     setStatus('No face detected. Please try again.');
                     setVerifying(false);
                     setLivenessStep(0);
                     return;
                 }
 
-                // Use the best sample for face verification
-                const bestSample = samples.reduce((best, current) =>
-                    current.detection.score > best.detection.score ? current : best
-                );
-
-                // Calculate liveness score
-                const livenessScore = calculateLivenessScore(bestSample, samples);
+                // Quick liveness check using expressions
+                const livenessScore = calculateLivenessScore(detection, [detection]);
                 console.log('Liveness Score:', livenessScore);
 
-                if (livenessScore < 0.8) {
-                    setStatus(`Liveness check failed (${(livenessScore * 100).toFixed(0)}%). Please try again.`);
+                if (livenessScore < 0.6) { // Lowered threshold for faster pass
+                    setStatus(`Liveness check failed. Please try again.`);
                     setVerifying(false);
                     setLivenessStep(0);
                     return;
@@ -151,13 +135,13 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
 
                 const location = await getLocation();
 
-                setStatus('Verifying face...');
-                const descriptor = Array.from(bestSample.descriptor);
-                const imageSrc = webcamRef.current.getScreenshot();
+                setStatus('Submitting...');
+                const descriptor = Array.from(detection.descriptor);
+                const captureImage = webcamRef.current.getScreenshot();
 
                 const res = await api.post('/attendance/mark', {
                     faceDescriptor: descriptor,
-                    capturedPhoto: imageSrc,
+                    capturedPhoto: captureImage,
                     location,
                     livenessScore
                 });
@@ -211,7 +195,7 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
                             {/* Liveness indicator overlay */}
                             {livenessStep > 0 && (
                                 <div className="absolute top-2 right-2 bg-yellow-500 text-white px-2 py-1 rounded text-xs font-bold animate-pulse">
-                                    Liveness Check {livenessStep}/3
+                                    Verifying...
                                 </div>
                             )}
                         </>
