@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import Webcam from 'react-webcam';
+import * as tf from '@tensorflow/tfjs';
 import * as faceapi from 'face-api.js';
 import api from '../services/api';
 import toast from 'react-hot-toast';
@@ -14,6 +15,10 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
     useEffect(() => {
         const loadModels = async () => {
             try {
+                // Initialize TensorFlow backend first
+                await tf.ready();
+                console.log('TensorFlow backend:', tf.getBackend());
+
                 const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
                 // Load models one at a time to avoid memory issues on mobile
                 await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
