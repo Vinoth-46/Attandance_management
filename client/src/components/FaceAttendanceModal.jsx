@@ -3,8 +3,8 @@ import Webcam from 'react-webcam';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 
-// Python face service URL - update this after deploying
-const FACE_SERVICE_URL = import.meta.env.VITE_FACE_SERVICE_URL || 'https://face-service.onrender.com';
+// Python face service URL
+const FACE_SERVICE_URL = import.meta.env.VITE_FACE_SERVICE_URL || 'https://attandance-management-1.onrender.com';
 
 export default function FaceAttendanceModal({ onClose, onSuccess }) {
     const webcamRef = useRef(null);
@@ -111,9 +111,9 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
                 </div>
 
                 <p className={`text-center font-semibold mb-4 ${status.includes('❌') ? 'text-red-600'
-                        : status.includes('✅') ? 'text-green-600'
-                            : status.includes('📍') ? 'text-orange-500'
-                                : 'text-indigo-600'
+                    : status.includes('✅') ? 'text-green-600'
+                        : status.includes('📍') ? 'text-orange-500'
+                            : 'text-indigo-600'
                     }`}>
                     {status}
                 </p>
