@@ -8,10 +8,13 @@ export const initializeFaceApi = async () => {
         // we simply load the models. This implicitly initializes the backend
         // and safely puts the models in cache for instant use later.
 
-        const MODEL_URL = '/models';
+        // 1. Force CPU Backend for stability (Fixes 'undefined backend' crash)
+        // WebGL is causing issues in this specific bundle environment.
+        console.log("Forcing CPU backend for stability...");
+        await faceapi.tf.setBackend('cpu');
+        await faceapi.tf.ready();
 
-        // Load sequentially to be safe
-        await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+        const MODEL_URL = '/models';
         console.log("SSD MobileNet Loaded");
 
         await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
