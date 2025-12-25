@@ -218,9 +218,13 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
                     )}
                 </div>
 
-                <p className="text-xs text-gray-400 text-center mt-3">
-                    Look at camera • Good lighting helps
-                </p>
+                <div className="bg-blue-50 p-2 rounded-lg mt-3 text-center border border-blue-100">
+                    <p className="text-xs text-blue-700 font-medium">
+                        💡 Instructions: <br />
+                        Look at the camera and <b>breathe naturally</b>.<br />
+                        The system checks for tiny movements to ensure you are real.
+                    </p>
+                </div>
             </div>
         </div>
     );
