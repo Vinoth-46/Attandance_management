@@ -17,11 +17,11 @@ export default function FaceRegistrationModal({ student, onClose, onSuccess }) {
         const loadModels = async () => {
             const MODEL_URL = '/models';
             try {
-                await Promise.all([
-                    faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-                ]);
+                // Load models one by one to avoid race conditions
+                await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+                await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+                await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+
                 setStatus('Ready. Choose webcam or upload a photo.');
                 setLoading(false);
             } catch (err) {
