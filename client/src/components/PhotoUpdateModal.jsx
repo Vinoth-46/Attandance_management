@@ -2,76 +2,103 @@ import { useState, useRef, useEffect } from 'react';
 import * as faceapi from 'face-api.js';
 import Webcam from 'react-webcam';
 import api from '../services/api';
-import { useToast } from './Toast';
+import toast from 'react-hot-toast';
 
 export default function PhotoUpdateModal({ onClose, onSuccess, currentPhoto }) {
-    const toast = useToast();
     const webcamRef = useRef(null);
+    const fileInputRef = useRef(null);
 
-    const [loading, setLoading] = useState(true);
+    const [mode, setMode] = useState('choose'); // choose, camera, upload
+    const [loading, setLoading] = useState(false);
     const [previewUrl, setPreviewUrl] = useState(null);
     const [processing, setProcessing] = useState(false);
     const [failedAttempts, setFailedAttempts] = useState(0);
     const [canRequestApproval, setCanRequestApproval] = useState(false);
-    const [status, setStatus] = useState('Initializing...');
+    const [status, setStatus] = useState('');
+    const [modelsLoaded, setModelsLoaded] = useState(false);
 
-    // Load face-api models
-    useEffect(() => {
-        const loadModels = async () => {
-            try {
-                const MODEL_URL = '/models';
-                await Promise.all([
-                    faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
-                ]);
-                setLoading(false);
-                setStatus('Ready to capture');
-            } catch (err) {
-                console.error('Failed to load models:', err);
-                setStatus('Failed to load face detection');
-            }
+    // Load models only when needed
+    const loadModels = async () => {
+        if (modelsLoaded) return true;
+        setLoading(true);
+        setStatus('Loading face detection...');
+        try {
+            const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
+            await Promise.all([
+                faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+                faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+                faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+            ]);
+            setModelsLoaded(true);
+            setLoading(false);
+            setStatus('');
+            return true;
+        } catch (err) {
+            console.error('Failed to load models:', err);
+            setStatus('Failed to load face detection');
+            setLoading(false);
+            return false;
+        }
+    };
+
+    const handleFileUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Convert to base64
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setPreviewUrl(reader.result);
+            setMode('preview');
         };
-        loadModels();
-    }, []);
+        reader.readAsDataURL(file);
+    };
 
-    const captureAndVerify = async () => {
+    const capturePhoto = () => {
         if (!webcamRef.current) return;
-
         const imageSrc = webcamRef.current.getScreenshot();
-        if (!imageSrc) {
+        if (imageSrc) {
+            setPreviewUrl(imageSrc);
+            setMode('preview');
+        } else {
             toast.error('Failed to capture photo');
+        }
+    };
+
+    const verifyAndSubmit = async () => {
+        if (!previewUrl) return;
+
+        // Load models if not already loaded
+        const loaded = await loadModels();
+        if (!loaded) {
+            toast.error('Face detection not available');
             return;
         }
 
-        setPreviewUrl(imageSrc);
         setProcessing(true);
         setStatus('Detecting face...');
 
         try {
-            // Detect face in new photo
-            const img = await faceapi.fetchImage(imageSrc);
+            const img = await faceapi.fetchImage(previewUrl);
             const detection = await faceapi.detectSingleFace(img)
                 .withFaceLandmarks()
                 .withFaceDescriptor();
 
             if (!detection) {
                 setStatus('No face detected. Try again.');
-                toast.error('No face detected');
+                toast.error('No face detected in photo');
                 setProcessing(false);
                 return;
             }
 
             setStatus('Verifying with your registered photo...');
 
-            // Send to backend for verification
             const { data } = await api.put('/students/update-photo', {
                 newFaceDescriptor: Array.from(detection.descriptor),
-                newProfilePhoto: imageSrc,
+                newProfilePhoto: previewUrl,
                 forceRequest: false
             });
 
-            // Success!
             toast.success(data.message);
             onSuccess && onSuccess();
             onClose();
@@ -88,7 +115,7 @@ export default function PhotoUpdateModal({ onClose, onSuccess, currentPhoto }) {
                 setStatus('Face verification failed too many times.');
                 toast.warning('You can now request admin approval');
             } else if (errorData?.needsAdminApproval) {
-                toast.info('Photo update is not enabled. Contact your Faculty Advisor.');
+                toast.error('Photo update is not enabled. Contact your Faculty Advisor.');
                 onClose();
             } else {
                 setStatus(errorData?.message || 'Verification failed');
@@ -105,11 +132,13 @@ export default function PhotoUpdateModal({ onClose, onSuccess, currentPhoto }) {
             return;
         }
 
+        const loaded = await loadModels();
+        if (!loaded) return;
+
         setProcessing(true);
         setStatus('Sending request to admin...');
 
         try {
-            // Detect face first
             const img = await faceapi.fetchImage(previewUrl);
             const detection = await faceapi.detectSingleFace(img)
                 .withFaceLandmarks()
@@ -138,7 +167,8 @@ export default function PhotoUpdateModal({ onClose, onSuccess, currentPhoto }) {
 
     const retake = () => {
         setPreviewUrl(null);
-        setStatus('Ready to capture');
+        setStatus('');
+        setMode('choose');
     };
 
     return (
@@ -149,54 +179,103 @@ export default function PhotoUpdateModal({ onClose, onSuccess, currentPhoto }) {
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
                 </div>
 
-                {loading ? (
-                    <div className="text-center py-8">
-                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-600 mx-auto mb-3"></div>
-                        <p className="text-gray-500">Loading face detection...</p>
-                    </div>
-                ) : (
-                    <>
-                        {/* Current vs New Photo */}
-                        <div className="grid grid-cols-2 gap-4 mb-4">
-                            <div className="text-center">
-                                <p className="text-xs text-gray-500 mb-2">Current Photo</p>
-                                <div className="w-24 h-24 mx-auto rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-100">
-                                    {currentPhoto ? (
-                                        <img src={currentPhoto} alt="Current" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <span className="flex items-center justify-center h-full text-3xl text-gray-400">👤</span>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="text-center">
-                                <p className="text-xs text-gray-500 mb-2">New Photo</p>
-                                <div className="w-24 h-24 mx-auto rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-100">
-                                    {previewUrl ? (
-                                        <img src={previewUrl} alt="New" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <span className="flex items-center justify-center h-full text-3xl text-gray-400">📷</span>
-                                    )}
-                                </div>
-                            </div>
+                {/* Current vs New Photo */}
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="text-center">
+                        <p className="text-xs text-gray-500 mb-2">Current Photo</p>
+                        <div className="w-24 h-24 mx-auto rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-100">
+                            {currentPhoto ? (
+                                <img src={currentPhoto} alt="Current" className="w-full h-full object-cover" />
+                            ) : (
+                                <span className="flex items-center justify-center h-full text-3xl text-gray-400">👤</span>
+                            )}
                         </div>
+                    </div>
+                    <div className="text-center">
+                        <p className="text-xs text-gray-500 mb-2">New Photo</p>
+                        <div className="w-24 h-24 mx-auto rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-100">
+                            {previewUrl ? (
+                                <img src={previewUrl} alt="New" className="w-full h-full object-cover" />
+                            ) : (
+                                <span className="flex items-center justify-center h-full text-3xl text-gray-400">📷</span>
+                            )}
+                        </div>
+                    </div>
+                </div>
 
-                        {/* Webcam */}
-                        {!previewUrl && (
-                            <div className="relative bg-gray-900 rounded-lg overflow-hidden h-48 mb-4">
-                                <Webcam
-                                    audio={false}
-                                    ref={webcamRef}
-                                    screenshotFormat="image/jpeg"
-                                    videoConstraints={{ facingMode: 'user' }}
-                                    className="w-full h-full object-cover"
-                                />
-                            </div>
-                        )}
+                {/* Loading State */}
+                {loading && (
+                    <div className="text-center py-6">
+                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mx-auto mb-3"></div>
+                        <p className="text-gray-500">{status}</p>
+                    </div>
+                )}
 
+                {/* Choose Mode */}
+                {mode === 'choose' && !loading && (
+                    <div className="space-y-3">
+                        <p className="text-center text-sm text-gray-600 mb-4">Choose how to update your photo:</p>
+                        <button
+                            onClick={() => setMode('camera')}
+                            className="w-full py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-500 flex items-center justify-center gap-2"
+                        >
+                            📸 Take Photo with Camera
+                        </button>
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="w-full py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-500 flex items-center justify-center gap-2"
+                        >
+                            📁 Upload Photo from Device
+                        </button>
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileUpload}
+                            accept="image/*"
+                            className="hidden"
+                        />
+                    </div>
+                )}
+
+                {/* Camera Mode */}
+                {mode === 'camera' && !loading && (
+                    <div>
+                        <div className="relative bg-gray-900 rounded-lg overflow-hidden h-48 mb-4">
+                            <Webcam
+                                audio={false}
+                                ref={webcamRef}
+                                screenshotFormat="image/jpeg"
+                                videoConstraints={{ facingMode: 'user' }}
+                                className="w-full h-full object-cover"
+                                mirrored={true}
+                            />
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setMode('choose')}
+                                className="flex-1 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300"
+                            >
+                                ← Back
+                            </button>
+                            <button
+                                onClick={capturePhoto}
+                                className="flex-1 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-500"
+                            >
+                                📸 Capture
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Preview Mode */}
+                {mode === 'preview' && !loading && (
+                    <div>
                         {/* Status */}
-                        <p className={`text-center text-sm font-medium mb-4 ${status.includes('fail') ? 'text-red-600' : 'text-brand-600'}`}>
-                            {status} {failedAttempts > 0 && `(Attempt ${failedAttempts}/4)`}
-                        </p>
+                        {status && (
+                            <p className={`text-center text-sm font-medium mb-3 ${status.includes('fail') ? 'text-red-600' : 'text-indigo-600'}`}>
+                                {status} {failedAttempts > 0 && `(Attempt ${failedAttempts}/4)`}
+                            </p>
+                        )}
 
                         {/* Info Alert */}
                         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
@@ -206,47 +285,42 @@ export default function PhotoUpdateModal({ onClose, onSuccess, currentPhoto }) {
                             </p>
                         </div>
 
-                        {/* Buttons */}
                         <div className="flex gap-3">
-                            {!previewUrl ? (
+                            <button
+                                onClick={retake}
+                                disabled={processing}
+                                className="flex-1 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 disabled:opacity-50"
+                            >
+                                🔄 Retake
+                            </button>
+                            {canRequestApproval ? (
                                 <button
-                                    onClick={captureAndVerify}
+                                    onClick={requestAdminApproval}
                                     disabled={processing}
-                                    className="flex-1 py-2 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-500 disabled:opacity-50"
+                                    className="flex-1 py-2 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-400 disabled:opacity-50"
                                 >
-                                    {processing ? 'Processing...' : '📸 Capture & Verify'}
+                                    {processing ? 'Sending...' : '📩 Request Approval'}
                                 </button>
                             ) : (
-                                <>
-                                    <button
-                                        onClick={retake}
-                                        disabled={processing}
-                                        className="flex-1 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 disabled:opacity-50"
-                                    >
-                                        🔄 Retake
-                                    </button>
-                                    {canRequestApproval && (
-                                        <button
-                                            onClick={requestAdminApproval}
-                                            disabled={processing}
-                                            className="flex-1 py-2 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-400 disabled:opacity-50"
-                                        >
-                                            📩 Request Approval
-                                        </button>
-                                    )}
-                                </>
+                                <button
+                                    onClick={verifyAndSubmit}
+                                    disabled={processing}
+                                    className="flex-1 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-500 disabled:opacity-50"
+                                >
+                                    {processing ? 'Verifying...' : '✓ Submit'}
+                                </button>
                             )}
                         </div>
-
-                        {/* Cancel */}
-                        <button
-                            onClick={onClose}
-                            className="w-full mt-3 py-2 text-gray-500 text-sm hover:text-gray-700"
-                        >
-                            Cancel
-                        </button>
-                    </>
+                    </div>
                 )}
+
+                {/* Cancel */}
+                <button
+                    onClick={onClose}
+                    className="w-full mt-4 py-2 text-gray-500 text-sm hover:text-gray-700"
+                >
+                    Cancel
+                </button>
             </div>
         </div>
     );
