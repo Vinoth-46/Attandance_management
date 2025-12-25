@@ -14,6 +14,18 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
     useEffect(() => {
         const loadModels = async () => {
             try {
+                // Initialize TensorFlow backend first
+                if (faceapi.tf) {
+                    try {
+                        await faceapi.tf.setBackend('webgl');
+                        await faceapi.tf.ready();
+                    } catch (e) {
+                        console.log('WebGL failed, trying CPU');
+                        await faceapi.tf.setBackend('cpu');
+                        await faceapi.tf.ready();
+                    }
+                }
+
                 const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
                 await Promise.all([
                     faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
@@ -23,7 +35,7 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
                 setStatus('Ready! Tap "Verify & Mark"');
                 setLoading(false);
             } catch (err) {
-                console.error(err);
+                console.error('Model load error:', err);
                 setStatus('Failed to load. Refresh page.');
             }
         };
@@ -138,9 +150,9 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
                 </div>
 
                 <p className={`text-center font-semibold mb-4 ${status.includes('❌') ? 'text-red-600'
-                        : status.includes('✅') ? 'text-green-600'
-                            : status.includes('📍') ? 'text-orange-500'
-                                : 'text-indigo-600'
+                    : status.includes('✅') ? 'text-green-600'
+                        : status.includes('📍') ? 'text-orange-500'
+                            : 'text-indigo-600'
                     }`}>
                     {status}
                 </p>
