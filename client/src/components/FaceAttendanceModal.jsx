@@ -1,54 +1,74 @@
 import { useRef, useEffect, useState } from 'react';
 import Webcam from 'react-webcam';
+import * as faceapi from 'face-api.js';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 
-// Python face service URL
-const FACE_SERVICE_URL = import.meta.env.VITE_FACE_SERVICE_URL || 'https://attandance-management-1.onrender.com';
-
 export default function FaceAttendanceModal({ onClose, onSuccess }) {
     const webcamRef = useRef(null);
-    const [status, setStatus] = useState('Ready! Tap "Verify & Mark"');
+    const [loading, setLoading] = useState(true);
+    const [status, setStatus] = useState('Loading...');
     const [verifying, setVerifying] = useState(false);
     const [showQRFallback, setShowQRFallback] = useState(false);
+    const [modelsLoaded, setModelsLoaded] = useState(false);
 
-    const verifyAndMark = async () => {
-        if (!webcamRef.current || verifying) return;
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadModels = async () => {
+            try {
+                setStatus('Loading face models...');
+                const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
+
+                // Load only essential models
+                await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+                await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+                await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+
+                if (!cancelled) {
+                    setModelsLoaded(true);
+                    setStatus('Ready! Tap "Mark Attendance"');
+                    setLoading(false);
+                }
+            } catch (err) {
+                console.error('Model load error:', err);
+                if (!cancelled) {
+                    setStatus('Failed to load. Tap to retry.');
+                    setLoading(false);
+                }
+            }
+        };
+
+        loadModels();
+        return () => { cancelled = true; };
+    }, []);
+
+    const handleMarkAttendance = async () => {
+        if (!webcamRef.current || verifying || !modelsLoaded) return;
 
         setVerifying(true);
-        setStatus('� Capturing photos...');
+        setStatus('📸 Capturing...');
 
         try {
-            // Capture 2 photos for liveness check
-            const photo1 = webcamRef.current.getScreenshot();
-            await new Promise(r => setTimeout(r, 400));
-            const photo2 = webcamRef.current.getScreenshot();
-
-            if (!photo1 || !photo2) {
-                setStatus('❌ Camera error. Try again.');
+            // Capture photo
+            const photo = webcamRef.current.getScreenshot();
+            if (!photo) {
+                setStatus('❌ Camera error');
                 setVerifying(false);
                 return;
             }
 
-            setStatus('🔍 Verifying liveness...');
+            setStatus('🔍 Detecting face...');
 
-            // Call Python face service for liveness check
-            const livenessRes = await fetch(`${FACE_SERVICE_URL}/liveness`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ image1: photo1, image2: photo2 })
-            });
+            // Detect face
+            const img = await faceapi.fetchImage(photo);
+            const detection = await faceapi
+                .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5 }))
+                .withFaceLandmarks()
+                .withFaceDescriptor();
 
-            const livenessData = await livenessRes.json();
-
-            if (!livenessData.success) {
-                setStatus('❌ ' + (livenessData.error || 'Liveness check failed'));
-                setVerifying(false);
-                return;
-            }
-
-            if (!livenessData.isLive) {
-                setStatus('❌ Liveness failed. Please move slightly.');
+            if (!detection) {
+                setStatus('❌ No face detected. Look at camera.');
                 setVerifying(false);
                 return;
             }
@@ -56,42 +76,54 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
             setStatus('📍 Getting location...');
 
             // Get location
-            const location = await new Promise((resolve, reject) => {
-                if (!navigator.geolocation) reject(new Error('No GPS'));
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
-                    (err) => reject(err),
-                    { enableHighAccuracy: true, timeout: 8000 }
-                );
-            });
+            let location;
+            try {
+                location = await new Promise((resolve, reject) => {
+                    if (!navigator.geolocation) reject(new Error('GPS not available'));
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+                        (err) => reject(err),
+                        { enableHighAccuracy: true, timeout: 10000 }
+                    );
+                });
+            } catch (locErr) {
+                setStatus('📍 Location failed');
+                setShowQRFallback(true);
+                setVerifying(false);
+                return;
+            }
 
             setStatus('✅ Marking attendance...');
 
-            // Send to Node.js backend
+            // Send to backend
             await api.post('/attendance/mark', {
-                faceDescriptor: livenessData.faceDescriptor,
-                capturedPhoto: photo2,
+                faceDescriptor: Array.from(detection.descriptor),
+                capturedPhoto: photo,
                 location,
-                livenessScore: livenessData.isLive ? 1.0 : 0
+                livenessScore: detection.detection.score
             });
 
-            toast.success('✅ Attendance marked!');
-            setStatus('✅ Success!');
+            toast.success('✅ Attendance marked successfully!');
+            setStatus('✅ Done!');
             setTimeout(() => { onSuccess(); onClose(); }, 1000);
 
         } catch (err) {
-            console.error('Verification error:', err);
+            console.error('Error:', err);
             const msg = err.response?.data?.message || err.message || 'Failed';
 
-            if (msg.includes('far') || msg.includes('location') || msg.includes('zone') || msg.includes('GPS')) {
-                setStatus('📍 ' + msg);
+            if (msg.toLowerCase().includes('location') || msg.toLowerCase().includes('far') || msg.toLowerCase().includes('zone')) {
                 setShowQRFallback(true);
-            } else {
-                setStatus('❌ ' + msg);
-                toast.error(msg);
             }
+
+            setStatus('❌ ' + msg);
+            toast.error(msg);
             setVerifying(false);
         }
+    };
+
+    const goToQR = () => {
+        onClose();
+        window.location.href = '/student/dashboard?action=scan-qr';
     };
 
     return (
@@ -100,53 +132,62 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
                 <h2 className="text-lg font-bold text-center mb-3 text-gray-800">📸 Face Attendance</h2>
 
                 <div className="relative aspect-[4/3] bg-gray-900 rounded-lg overflow-hidden mb-3">
-                    <Webcam
-                        audio={false}
-                        ref={webcamRef}
-                        screenshotFormat="image/jpeg"
-                        className="w-full h-full object-cover"
-                        videoConstraints={{ facingMode: 'user', width: 480, height: 360 }}
-                        mirrored={true}
-                    />
+                    {loading ? (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800">
+                            <div className="animate-spin rounded-full h-10 w-10 border-4 border-indigo-500 border-t-transparent mb-3"></div>
+                            <p className="text-white text-sm">{status}</p>
+                        </div>
+                    ) : (
+                        <Webcam
+                            audio={false}
+                            ref={webcamRef}
+                            screenshotFormat="image/jpeg"
+                            className="w-full h-full object-cover"
+                            videoConstraints={{ facingMode: 'user', width: 480, height: 360 }}
+                            mirrored={true}
+                        />
+                    )}
                 </div>
 
-                <p className={`text-center font-semibold mb-4 ${status.includes('❌') ? 'text-red-600'
-                    : status.includes('✅') ? 'text-green-600'
-                        : status.includes('📍') ? 'text-orange-500'
-                            : 'text-indigo-600'
+                <p className={`text-center font-semibold mb-4 text-sm ${status.includes('❌') ? 'text-red-600'
+                        : status.includes('✅') ? 'text-green-600'
+                            : status.includes('📍') ? 'text-orange-500'
+                                : 'text-indigo-600'
                     }`}>
                     {status}
                 </p>
 
                 {showQRFallback && (
-                    <button
-                        onClick={() => { onClose(); window.location.href = '/student/dashboard?action=scan-qr'; }}
-                        className="w-full mb-3 py-2.5 bg-purple-600 text-white rounded-lg font-medium"
-                    >
-                        📷 Use QR Code (GPS issue)
+                    <button onClick={goToQR} className="w-full mb-3 py-2.5 bg-purple-600 text-white rounded-lg font-medium">
+                        📷 Use QR Code Instead
                     </button>
                 )}
 
                 <div className="flex gap-3">
-                    <button onClick={onClose} className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium">
+                    <button
+                        onClick={onClose}
+                        className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200"
+                    >
                         Cancel
                     </button>
 
-                    <button
-                        onClick={verifyAndMark}
-                        disabled={verifying}
-                        className={`flex-1 py-2.5 rounded-lg font-bold ${verifying ? 'bg-gray-400 text-white' : 'bg-green-600 text-white hover:bg-green-500'
-                            }`}
-                    >
-                        {verifying ? '⏳ Verifying...' : '✓ Verify & Mark'}
-                    </button>
+                    {!loading && modelsLoaded && (
+                        <button
+                            onClick={handleMarkAttendance}
+                            disabled={verifying}
+                            className={`flex-1 py-2.5 rounded-lg font-bold ${verifying
+                                    ? 'bg-gray-400 text-white cursor-not-allowed'
+                                    : 'bg-green-600 text-white hover:bg-green-500'
+                                }`}
+                        >
+                            {verifying ? '⏳ Verifying...' : '✓ Mark Attendance'}
+                        </button>
+                    )}
                 </div>
 
-                {!verifying && (
-                    <p className="text-xs text-gray-400 text-center mt-3">
-                        Look at camera, stay still, tap Verify
-                    </p>
-                )}
+                <p className="text-xs text-gray-400 text-center mt-3">
+                    Look at camera • Good lighting helps
+                </p>
             </div>
         </div>
     );
