@@ -2,26 +2,29 @@ import * as faceapi from 'face-api.js';
 
 export const initializeFaceApi = async () => {
     try {
-        console.log("Initialize FaceAPI: Checking backend...");
+        console.log("Initialize FaceAPI: Pre-loading models...");
 
-        // 1. Force backend if not set
-        if (!faceapi.tf.getBackend()) {
-            console.log("No backend found. Attempting to set WebGL...");
-            try {
-                await faceapi.tf.setBackend('webgl');
-            } catch (err) {
-                console.warn("WebGL failed. Falling back to CPU.", err);
-                await faceapi.tf.setBackend('cpu');
-            }
-        }
+        // Instead of touching faceapi.tf directly (which causes crashes),
+        // we simply load the models. This implicitly initializes the backend
+        // and safely puts the models in cache for instant use later.
 
-        // 2. Wait for ready state
-        await faceapi.tf.ready();
+        const MODEL_URL = '/models';
 
-        console.log(`FaceAPI Ready. Backend: ${faceapi.tf.getBackend()}`);
+        // Load sequentially to be safe
+        await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+        console.log("SSD MobileNet Loaded");
+
+        await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+        console.log("Face Landmarks Loaded");
+
+        await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+        console.log("Face Recognition Loaded");
+
+        console.log("FaceAPI Fully Initialized & Models Cached");
         return true;
     } catch (err) {
-        console.error("FaceAPI Initialization Failed:", err);
+        console.error("FaceAPI Initialization Warning:", err);
+        // We ensure we don't crash the app if this fails
         return false;
     }
 };
