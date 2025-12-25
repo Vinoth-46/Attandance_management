@@ -20,7 +20,7 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
 
     useEffect(() => {
         const loadModels = async () => {
-            const MODEL_URL = '/models';
+            const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
             try {
                 await Promise.all([
                     faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
@@ -230,8 +230,8 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
                 </div>
 
                 <p className={`mt-4 text-center font-semibold text-lg ${status.includes('Timeout') || status.includes('Failed') || status.includes('failed')
-                        ? 'text-red-600'
-                        : status.includes('✅') ? 'text-green-600' : 'text-indigo-600'
+                    ? 'text-red-600'
+                    : status.includes('✅') ? 'text-green-600' : 'text-indigo-600'
                     }`}>
                     {status}
                 </p>
