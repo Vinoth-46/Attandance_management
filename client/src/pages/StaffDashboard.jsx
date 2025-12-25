@@ -131,6 +131,7 @@ export default function StaffDashboard() {
     const [togglingStudentId, setTogglingStudentId] = useState(null); // For optimistic toggle update
     const [viewingStudentId, setViewingStudentId] = useState(null); // For View button loading
     const [togglingPhotoId, setTogglingPhotoId] = useState(null); // For photo permission toggle loading
+    const [startingSession, setStartingSession] = useState(false); // For Start Session button loading
 
     // Export Handlers
     const handleExportExcel = async () => {
@@ -451,6 +452,8 @@ export default function StaffDashboard() {
 
     const handleStartSession = async (e, forceCreate = false) => {
         e?.preventDefault?.();
+        if (startingSession) return; // Prevent double clicks
+        setStartingSession(true);
         try {
             // Generate period name from manual inputs
             const periodName = getPeriodDisplay(newSession.periods, newSession.subject);
@@ -491,7 +494,9 @@ export default function StaffDashboard() {
                     );
                     if (override) {
                         // Retry with forceCreate
+                        setStartingSession(false);
                         handleStartSession(null, true);
+                        return;
                     }
                 } else {
                     toast.warning(message + `Please coordinate with ${existingSession.staffName} or wait until their session ends.`);
@@ -499,6 +504,8 @@ export default function StaffDashboard() {
             } else {
                 toast.error(err.response?.data?.message || 'Failed to start session');
             }
+        } finally {
+            setStartingSession(false);
         }
     };
 
@@ -1296,7 +1303,18 @@ export default function StaffDashboard() {
                                     </div>
                                 </div>
 
-                                <button type="submit" className="bg-green-600 text-white w-full py-2 rounded-md hover:bg-green-500">Start Session</button>
+                                <button
+                                    type="submit"
+                                    disabled={startingSession}
+                                    className={`w-full py-2 rounded-md text-white font-medium flex items-center justify-center gap-2 ${startingSession ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-500'}`}
+                                >
+                                    {startingSession ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                                            Starting...
+                                        </>
+                                    ) : 'Start Session'}
+                                </button>
                             </form>
                         </div>
 
