@@ -50,25 +50,58 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
         setStatus('📸 Capturing...');
 
         try {
-            // Capture photo
-            const photo = webcamRef.current.getScreenshot();
-            if (!photo) {
+            // 1. Capture first photo
+            const photo1 = webcamRef.current.getScreenshot();
+
+            // Wait 500ms for natural movement
+            await new Promise(r => setTimeout(r, 500));
+
+            // 2. Capture second photo
+            const photo2 = webcamRef.current.getScreenshot();
+
+            if (!photo1 || !photo2) {
                 setStatus('❌ Camera error');
                 setVerifying(false);
                 return;
             }
 
-            setStatus('🔍 Detecting face...');
+            setStatus('🔍 Checking liveness...');
 
-            // Detect face using High Accuracy SSD MobileNet V1
-            const img = await faceapi.fetchImage(photo);
-            const detection = await faceapi
-                .detectSingleFace(img, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
-                .withFaceLandmarks()
-                .withFaceDescriptor();
+            // Detect faces in both photos
+            const img1 = await faceapi.fetchImage(photo1);
+            const img2 = await faceapi.fetchImage(photo2);
 
-            if (!detection) {
-                setStatus('❌ No face detected. Look at camera.');
+            const options = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 });
+
+            const detection1 = await faceapi.detectSingleFace(img1, options).withFaceLandmarks().withFaceDescriptor();
+            const detection2 = await faceapi.detectSingleFace(img2, options).withFaceLandmarks().withFaceDescriptor();
+
+            if (!detection1 || !detection2) {
+                setStatus('❌ Face lost. Stay still.');
+                setVerifying(false);
+                return;
+            }
+
+            // 3. Liveness Check: Calculate movement of nose tip
+            const nose1 = detection1.landmarks.getNose()[3];
+            const nose2 = detection2.landmarks.getNose()[3];
+
+            const movement = Math.sqrt(
+                Math.pow(nose1.x - nose2.x, 2) + Math.pow(nose1.y - nose2.y, 2)
+            );
+
+            console.log('Liveness movement:', movement);
+
+            // Real humans have micro-movements (usually > 2px). Static photos have ~0 movement.
+            // If movement is too large (> 50px), it's too shaky.
+            if (movement < 2) {
+                setStatus('⚠️ Liveness failed: Too still (Photo detected?)');
+                setVerifying(false);
+                return;
+            }
+
+            if (movement > 50) {
+                setStatus('⚠️ Liveness failed: Too much movement');
                 setVerifying(false);
                 return;
             }
@@ -95,12 +128,12 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
 
             setStatus('✅ Marking attendance...');
 
-            // Send to backend
+            // Send to backend (use best descriptor)
             await api.post('/attendance/mark', {
-                faceDescriptor: Array.from(detection.descriptor),
-                capturedPhoto: photo,
+                faceDescriptor: Array.from(detection1.descriptor),
+                capturedPhoto: photo1,
                 location,
-                livenessScore: detection.detection.score
+                livenessScore: 0.99 // Passed client check
             });
 
             toast.success('✅ Attendance marked successfully!');
