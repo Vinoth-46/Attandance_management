@@ -15,6 +15,7 @@ export default function StaffDashboard() {
     const view = searchParams.get('view') || 'students';
 
     const [students, setStudents] = useState([]);
+    const [loadingStudents, setLoadingStudents] = useState(true); // Loading state for students list
     const [pendingLeaves, setPendingLeaves] = useState([]);
     const [approvedLeaves, setApprovedLeaves] = useState([]);
     const [rejectedLeaves, setRejectedLeaves] = useState([]);
@@ -128,6 +129,8 @@ export default function StaffDashboard() {
     const [expandedSections, setExpandedSections] = useState({});
     const [reportsLoading, setReportsLoading] = useState(false);
     const [togglingStudentId, setTogglingStudentId] = useState(null); // For optimistic toggle update
+    const [viewingStudentId, setViewingStudentId] = useState(null); // For View button loading
+    const [togglingPhotoId, setTogglingPhotoId] = useState(null); // For photo permission toggle loading
 
     // Export Handlers
     const handleExportExcel = async () => {
@@ -233,12 +236,15 @@ export default function StaffDashboard() {
     }, [view]);
 
     const fetchStudents = async () => {
+        setLoadingStudents(true);
         try {
             const { data } = await api.get('/admin/students');
             setStudents(data);
         } catch (e) {
             console.error(e);
-            alert('Failed to load students: ' + (e.message || 'Unknown error'));
+            toast.error('Failed to load students: ' + (e.message || 'Unknown error'));
+        } finally {
+            setLoadingStudents(false);
         }
     };
 
@@ -556,12 +562,22 @@ export default function StaffDashboard() {
     };
 
     const togglePhotoPermission = async (studentId, currentStatus) => {
+        if (togglingPhotoId === studentId) return; // Prevent rapid clicks
+        setTogglingPhotoId(studentId);
+
+        // Optimistic UI update
+        setSelectedStudent(prev => prev ? { ...prev, canUpdatePhoto: !prev.canUpdatePhoto } : prev);
+
         try {
             const { data } = await api.put(`/admin/students/${studentId}/photo-permission`);
             toast.success(data.message);
             fetchStudents();
         } catch (err) {
+            // Revert on error
+            setSelectedStudent(prev => prev ? { ...prev, canUpdatePhoto: currentStatus } : prev);
             toast.error(err.response?.data?.message || 'Failed to toggle photo permission');
+        } finally {
+            setTogglingPhotoId(null);
         }
     };
 
@@ -708,12 +724,16 @@ export default function StaffDashboard() {
     };
 
     const openViewModal = async (student) => {
+        if (viewingStudentId) return; // Prevent rapid clicks
+        setViewingStudentId(student._id);
         try {
             const { data } = await api.get(`/admin/students/${student._id}`);
             setSelectedStudent(data);
             setShowViewModal(true);
         } catch (err) {
-            alert(err.response?.data?.message || err.message);
+            toast.error(err.response?.data?.message || err.message);
+        } finally {
+            setViewingStudentId(null);
         }
     };
 
@@ -897,8 +917,18 @@ export default function StaffDashboard() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200 bg-white">
-                                {students.length === 0 && <tr><td colSpan="6" className="py-8 text-center text-gray-500">No students found.</td></tr>}
-                                {students.map((student) => (
+                                {loadingStudents && (
+                                    <tr>
+                                        <td colSpan="6" className="py-12 text-center">
+                                            <div className="flex flex-col items-center gap-3">
+                                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>
+                                                <p className="text-gray-500">Loading students...</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                                {!loadingStudents && students.length === 0 && <tr><td colSpan="6" className="py-8 text-center text-gray-500">No students found.</td></tr>}
+                                {!loadingStudents && students.map((student) => (
                                     <tr key={student._id}>
                                         <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
                                             {student.name}
@@ -925,7 +955,18 @@ export default function StaffDashboard() {
                                         </td>
                                         <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                                             <div className="flex gap-2 items-center justify-end">
-                                                <button onClick={() => openViewModal(student)} className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded" title="View"><EyeIcon className="h-4 w-4" /></button>
+                                                <button
+                                                    onClick={() => openViewModal(student)}
+                                                    disabled={viewingStudentId === student._id}
+                                                    className={`p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded ${viewingStudentId === student._id ? 'opacity-50 cursor-wait' : ''}`}
+                                                    title="View"
+                                                >
+                                                    {viewingStudentId === student._id ? (
+                                                        <div className="animate-spin h-4 w-4 border-2 border-gray-600 border-t-transparent rounded-full"></div>
+                                                    ) : (
+                                                        <EyeIcon className="h-4 w-4" />
+                                                    )}
+                                                </button>
                                                 <button onClick={() => openEditModal(student)} className="p-1.5 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded" title="Edit"><PencilIcon className="h-4 w-4" /></button>
                                                 <button onClick={() => openFaceModal(student)} className="p-1.5 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded" title="Register Face"><CameraIcon className="h-4 w-4" /></button>
                                                 <button onClick={() => handleDeleteStudent(student._id)} className="p-1.5 text-red-600 hover:text-red-900 hover:bg-red-50 rounded" title="Delete"><TrashIcon className="h-4 w-4" /></button>
@@ -1819,12 +1860,18 @@ export default function StaffDashboard() {
                                 {/* Photo Permission Toggle */}
                                 <button
                                     onClick={() => togglePhotoPermission(selectedStudent._id, selectedStudent.canUpdatePhoto)}
-                                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium ${selectedStudent.canUpdatePhoto
-                                        ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    disabled={togglingPhotoId === selectedStudent._id}
+                                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${togglingPhotoId === selectedStudent._id ? 'opacity-50 cursor-wait' : ''
+                                        } ${selectedStudent.canUpdatePhoto
+                                            ? 'bg-green-100 text-green-800 hover:bg-green-200 border-2 border-green-300'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-gray-300'
                                         }`}
                                 >
-                                    <CameraIcon className="h-4 w-4" />
+                                    {togglingPhotoId === selectedStudent._id ? (
+                                        <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
+                                    ) : (
+                                        <CameraIcon className="h-4 w-4" />
+                                    )}
                                     {selectedStudent.canUpdatePhoto ? '📷 Photo Update: ON' : '📷 Photo Update: OFF'}
                                 </button>
                                 <button onClick={() => { setShowViewModal(false); setSelectedStudent(null); }} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm font-medium">
