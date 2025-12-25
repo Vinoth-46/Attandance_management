@@ -23,42 +23,22 @@ export default function PhotoUpdateModal({ onClose, onSuccess, currentPhoto }) {
         setLoading(true);
         setStatus('Loading face detection...');
         try {
-            const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
+            const MODEL_URL = '/models';
 
-            // Ensure TensorFlow backend is ready
-            await faceapi.tf.setBackend('webgl');
-            await faceapi.tf.ready();
+            // Load models one by one
+            await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+            await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+            await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
 
-            await Promise.all([
-                faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
-                faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-                faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
-            ]);
             setModelsLoaded(true);
             setLoading(false);
             setStatus('');
             return true;
         } catch (err) {
             console.error('Failed to load models:', err);
-            // Try CPU fallback
-            try {
-                await faceapi.tf.setBackend('cpu');
-                await faceapi.tf.ready();
-                const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
-                await Promise.all([
-                    faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
-                ]);
-                setModelsLoaded(true);
-                setLoading(false);
-                setStatus('');
-                return true;
-            } catch (err2) {
-                setStatus('Failed to load face detection');
-                setLoading(false);
-                return false;
-            }
+            setStatus('Failed to load face detection');
+            setLoading(false);
+            return false;
         }
     };
 
