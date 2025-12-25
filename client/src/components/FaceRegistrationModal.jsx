@@ -19,9 +19,6 @@ export default function FaceRegistrationModal({ student, onClose, onSuccess }) {
             try {
                 console.log('Starting model load from:', MODEL_URL);
 
-                // Ensure backend is ready (Crucial fix for 'void 0' error)
-                await faceapi.tf.ready();
-
                 // Load models one by one
                 await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
                 await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
