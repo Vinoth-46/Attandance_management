@@ -1143,11 +1143,44 @@ export default function StaffDashboard() {
                         <div className="bg-white p-6 rounded-lg shadow ring-1 ring-black ring-opacity-5">
                             <h3 className="text-lg font-semibold mb-4">Start New Session</h3>
                             <form onSubmit={handleStartSession} className="space-y-4">
-                                {/* Class Selection */}
+                                {/* Class Selection - Cascading */}
                                 <div className="grid grid-cols-3 gap-4">
-                                    <select value={newSession.department} onChange={e => setNewSession({ ...newSession, department: e.target.value, subject: '' })} required className="border p-2 rounded"><option value="">Department</option>{classFilters.departments.map(d => <option key={d}>{d}</option>)}</select>
-                                    <select value={newSession.year} onChange={e => setNewSession({ ...newSession, year: e.target.value })} required className="border p-2 rounded"><option value="">Year</option>{classFilters.years.map(y => <option key={y}>{y}</option>)}</select>
-                                    <select value={newSession.section} onChange={e => setNewSession({ ...newSession, section: e.target.value })} className="border p-2 rounded"><option value="">Section (All)</option>{classFilters.sections.map(s => <option key={s}>{s}</option>)}</select>
+                                    <select
+                                        value={newSession.department}
+                                        onChange={e => setNewSession({ ...newSession, department: e.target.value, year: '', section: '', subject: '' })}
+                                        required
+                                        className="border p-2 rounded"
+                                    >
+                                        <option value="">Select Dept</option>
+                                        {classFilters.departments?.map(d => <option key={d}>{d}</option>)}
+                                    </select>
+                                    <select
+                                        value={newSession.year}
+                                        onChange={e => setNewSession({ ...newSession, year: e.target.value, section: '' })}
+                                        required
+                                        className="border p-2 rounded"
+                                        disabled={!newSession.department}
+                                    >
+                                        <option value="">Select Year</option>
+                                        {newSession.department && classFilters.hierarchy?.[newSession.department] &&
+                                            Object.keys(classFilters.hierarchy[newSession.department]).sort().map(y =>
+                                                <option key={y}>{y}</option>
+                                            )
+                                        }
+                                    </select>
+                                    <select
+                                        value={newSession.section}
+                                        onChange={e => setNewSession({ ...newSession, section: e.target.value })}
+                                        className="border p-2 rounded"
+                                        disabled={!newSession.year}
+                                    >
+                                        <option value="">All Sections</option>
+                                        {newSession.department && newSession.year &&
+                                            classFilters.hierarchy?.[newSession.department]?.[newSession.year]?.map(s =>
+                                                <option key={s}>{s}</option>
+                                            )
+                                        }
+                                    </select>
                                 </div>
 
                                 {/* Period Selection - SIMPLIFIED MANUAL INPUTS */}
