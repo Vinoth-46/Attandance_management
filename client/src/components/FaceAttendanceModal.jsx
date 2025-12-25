@@ -22,6 +22,10 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
         const loadModels = async () => {
             const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
             try {
+                // Ensure TensorFlow backend is ready
+                await faceapi.tf.setBackend('webgl');
+                await faceapi.tf.ready();
+
                 await Promise.all([
                     faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
                     faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
@@ -31,8 +35,23 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
                 setStatus('Press "Start" and follow the instructions');
                 setLoading(false);
             } catch (err) {
-                console.error(err);
-                setStatus('Failed to load face models.');
+                console.error('Model loading error:', err);
+                // Try CPU backend as fallback
+                try {
+                    await faceapi.tf.setBackend('cpu');
+                    await faceapi.tf.ready();
+                    await Promise.all([
+                        faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+                        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+                        faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+                        faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
+                    ]);
+                    setStatus('Press "Start" and follow the instructions');
+                    setLoading(false);
+                } catch (err2) {
+                    console.error('Fallback failed:', err2);
+                    setStatus('Failed to load. Please refresh.');
+                }
             }
         };
         loadModels();
