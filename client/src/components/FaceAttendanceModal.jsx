@@ -20,8 +20,8 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
                 setStatus('Loading face models...');
                 const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
 
-                // Load only essential models
-                await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+                // Load high-accuracy models
+                await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
                 await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
                 await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
 
@@ -60,10 +60,10 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
 
             setStatus('🔍 Detecting face...');
 
-            // Detect face
+            // Detect face using High Accuracy SSD MobileNet V1
             const img = await faceapi.fetchImage(photo);
             const detection = await faceapi
-                .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5 }))
+                .detectSingleFace(img, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
                 .withFaceLandmarks()
                 .withFaceDescriptor();
 
@@ -150,9 +150,9 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
                 </div>
 
                 <p className={`text-center font-semibold mb-4 text-sm ${status.includes('❌') ? 'text-red-600'
-                        : status.includes('✅') ? 'text-green-600'
-                            : status.includes('📍') ? 'text-orange-500'
-                                : 'text-indigo-600'
+                    : status.includes('✅') ? 'text-green-600'
+                        : status.includes('📍') ? 'text-orange-500'
+                            : 'text-indigo-600'
                     }`}>
                     {status}
                 </p>
@@ -176,8 +176,8 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
                             onClick={handleMarkAttendance}
                             disabled={verifying}
                             className={`flex-1 py-2.5 rounded-lg font-bold ${verifying
-                                    ? 'bg-gray-400 text-white cursor-not-allowed'
-                                    : 'bg-green-600 text-white hover:bg-green-500'
+                                ? 'bg-gray-400 text-white cursor-not-allowed'
+                                : 'bg-green-600 text-white hover:bg-green-500'
                                 }`}
                         >
                             {verifying ? '⏳ Verifying...' : '✓ Mark Attendance'}

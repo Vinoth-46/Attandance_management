@@ -60,8 +60,11 @@ export default function FaceRegistrationModal({ student, onClose, onSuccess }) {
                 img = await faceapi.fetchImage(dataUrl);
             }
 
-            // Detect Face
-            const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
+            // Detect Face (High Accuracy)
+            const detections = await faceapi
+                .detectSingleFace(img, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
+                .withFaceLandmarks()
+                .withFaceDescriptor();
 
             if (!detections) {
                 setStatus('No face detected in the image. Please try again with a clearer photo.');
