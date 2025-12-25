@@ -8,10 +8,11 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
     const webcamRef = useRef(null);
     const [loading, setLoading] = useState(true);
     const [loadProgress, setLoadProgress] = useState(0);
-    const [status, setStatus] = useState('Loading face models...');
-    const [phase, setPhase] = useState('loading'); // loading, ready, detecting, verifying, success
+    const [status, setStatus] = useState('Loading...');
+    const [phase, setPhase] = useState('loading'); // loading, instructions, detecting, verifying, success
     const [showQRFallback, setShowQRFallback] = useState(false);
     const [faceDetected, setFaceDetected] = useState(false);
+    const [progress, setProgress] = useState(0);
     const detectionRef = useRef(null);
     const checkIntervalRef = useRef(null);
     const movementCountRef = useRef(0);
@@ -24,28 +25,23 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
             try {
                 const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
 
-                // Load models one by one with progress
-                setLoadProgress(20);
+                setLoadProgress(25);
                 await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
                 if (cancelled) return;
 
-                setLoadProgress(50);
+                setLoadProgress(60);
                 await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
                 if (cancelled) return;
 
-                setLoadProgress(80);
+                setLoadProgress(100);
                 await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
                 if (cancelled) return;
 
-                setLoadProgress(100);
-                setStatus('Ready! Tap "Verify Face"');
-                setPhase('ready');
+                setPhase('instructions');
                 setLoading(false);
             } catch (err) {
                 console.error('Model load error:', err);
-                if (!cancelled) {
-                    setStatus('Failed to load. Check internet and refresh.');
-                }
+                if (!cancelled) setStatus('Failed to load. Refresh page.');
             }
         };
 
@@ -58,9 +54,10 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
 
     const startDetection = () => {
         setPhase('detecting');
-        setStatus('� Look at camera and move slightly...');
+        setStatus('🔍 Keep looking at camera...');
         movementCountRef.current = 0;
         lastPositionRef.current = null;
+        setProgress(0);
 
         checkIntervalRef.current = setInterval(async () => {
             if (!webcamRef.current) return;
@@ -77,56 +74,57 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
 
                 if (!detection) {
                     setFaceDetected(false);
-                    setStatus('👀 No face detected. Look at camera.');
+                    setStatus('👀 Keep your face in frame');
                     return;
                 }
 
                 setFaceDetected(true);
                 detectionRef.current = { detection, screenshot };
 
-                // Get face position
-                const nose = detection.landmarks.getNose()[3];
-                const currentPos = { x: nose.x, y: nose.y };
+                // Get face center position
+                const box = detection.detection.box;
+                const currentPos = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 
-                // Check for movement (liveness)
+                // Check for any movement
                 if (lastPositionRef.current) {
                     const dx = Math.abs(currentPos.x - lastPositionRef.current.x);
                     const dy = Math.abs(currentPos.y - lastPositionRef.current.y);
 
-                    // Any small movement counts
-                    if (dx > 2 || dy > 2) {
+                    if (dx > 3 || dy > 3) {
                         movementCountRef.current++;
-                        setStatus(`🔍 Good! Keep looking... (${movementCountRef.current}/5)`);
+                        const prog = Math.min((movementCountRef.current / 4) * 100, 100);
+                        setProgress(prog);
+                        setStatus(`✓ Verifying... ${Math.round(prog)}%`);
                     }
                 }
 
                 lastPositionRef.current = currentPos;
 
-                // Need 5 movement detections (proves it's not a static photo)
-                if (movementCountRef.current >= 5) {
+                // Only need 4 movements now (easier)
+                if (movementCountRef.current >= 4) {
                     clearInterval(checkIntervalRef.current);
                     submitAttendance();
                 }
             } catch (err) {
                 console.error('Detection error:', err);
             }
-        }, 400);
+        }, 350);
 
-        // Timeout after 15 seconds
+        // Timeout after 12 seconds
         setTimeout(() => {
             if (phase === 'detecting') {
                 clearInterval(checkIntervalRef.current);
-                setStatus('⏱️ Timeout. Try again.');
-                setPhase('ready');
+                setStatus('⏱️ Timeout. Tap to try again.');
+                setPhase('instructions');
             }
-        }, 15000);
+        }, 12000);
     };
 
     const submitAttendance = async () => {
         if (!detectionRef.current) return;
 
         setPhase('verifying');
-        setStatus('📍 Getting location...');
+        setStatus('📍 Getting your location...');
 
         try {
             const location = await new Promise((resolve, reject) => {
@@ -138,7 +136,7 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
                 );
             });
 
-            setStatus('✅ Submitting attendance...');
+            setStatus('✅ Almost done...');
 
             await api.post('/attendance/mark', {
                 faceDescriptor: Array.from(detectionRef.current.detection.descriptor),
@@ -162,7 +160,7 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
                 setStatus('❌ ' + msg);
                 toast.error(msg);
             }
-            setPhase('ready');
+            setPhase('instructions');
         }
     };
 
@@ -171,23 +169,72 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
         window.location.href = '/student/dashboard?action=scan-qr';
     };
 
+    // Instructions Screen
+    const renderInstructions = () => (
+        <div className="text-center">
+            <h3 className="font-bold text-gray-800 mb-4">How to Verify:</h3>
+
+            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                <div className="flex items-center justify-center gap-4 mb-3">
+                    <div className="text-4xl animate-bounce">👤</div>
+                    <div className="text-2xl">→</div>
+                    <div className="text-4xl animate-pulse">📱</div>
+                </div>
+
+                <div className="space-y-2 text-left">
+                    <div className="flex items-center gap-2">
+                        <span className="bg-indigo-100 text-indigo-700 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">1</span>
+                        <span className="text-sm">Hold phone at <b>arm's length</b></span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="bg-indigo-100 text-indigo-700 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">2</span>
+                        <span className="text-sm">Look at <b>camera</b> (front facing)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="bg-indigo-100 text-indigo-700 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">3</span>
+                        <span className="text-sm"><b>Move head slowly</b> left-right</span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                <p className="text-xs text-yellow-800">
+                    💡 <b>Tip:</b> Good lighting helps! Face a window or light.
+                </p>
+            </div>
+
+            <button
+                onClick={startDetection}
+                className="w-full py-3 bg-indigo-600 text-white rounded-lg font-bold text-lg hover:bg-indigo-500"
+            >
+                ▶️ I'm Ready - Start!
+            </button>
+        </div>
+    );
+
     return (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-5">
                 <h2 className="text-lg font-bold text-center mb-3 text-gray-800">📸 Face Attendance</h2>
 
-                <div className="relative aspect-[4/3] bg-gray-900 rounded-lg overflow-hidden mb-3">
-                    {loading ? (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800">
-                            <div className="animate-spin rounded-full h-10 w-10 border-4 border-indigo-500 border-t-transparent mb-3"></div>
-                            <p className="text-white text-sm mb-2">{status}</p>
-                            <div className="w-48 bg-gray-600 rounded-full h-2">
-                                <div className="bg-indigo-500 h-2 rounded-full transition-all" style={{ width: `${loadProgress}%` }}></div>
-                            </div>
-                            <p className="text-gray-400 text-xs mt-1">{loadProgress}%</p>
+                {/* Loading State */}
+                {loading && (
+                    <div className="aspect-[4/3] bg-gray-800 rounded-lg flex flex-col items-center justify-center mb-3">
+                        <div className="animate-spin rounded-full h-10 w-10 border-4 border-indigo-500 border-t-transparent mb-3"></div>
+                        <p className="text-white text-sm mb-2">Loading face detection...</p>
+                        <div className="w-48 bg-gray-600 rounded-full h-2">
+                            <div className="bg-indigo-500 h-2 rounded-full transition-all" style={{ width: `${loadProgress}%` }}></div>
                         </div>
-                    ) : (
-                        <>
+                    </div>
+                )}
+
+                {/* Instructions Phase */}
+                {phase === 'instructions' && renderInstructions()}
+
+                {/* Detection Phase */}
+                {(phase === 'detecting' || phase === 'verifying' || phase === 'success') && (
+                    <>
+                        <div className="relative aspect-[4/3] bg-gray-900 rounded-lg overflow-hidden mb-3">
                             <Webcam
                                 audio={false}
                                 ref={webcamRef}
@@ -197,63 +244,50 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
                                 mirrored={true}
                             />
 
-                            {/* Face detection indicator */}
+                            {/* Face indicator */}
+                            <div className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-bold ${faceDetected ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
+                                {faceDetected ? '✓ Face OK' : '✗ No Face'}
+                            </div>
+
+                            {/* Progress bar */}
                             {phase === 'detecting' && (
-                                <div className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-bold ${faceDetected ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
-                                    {faceDetected ? '✓ Face OK' : '✗ No Face'}
+                                <div className="absolute bottom-0 left-0 right-0 h-2 bg-gray-800">
+                                    <div
+                                        className="h-full bg-green-500 transition-all duration-200"
+                                        style={{ width: `${progress}%` }}
+                                    ></div>
                                 </div>
                             )}
+                        </div>
 
-                            {/* Progress indicator */}
-                            {phase === 'detecting' && (
-                                <div className="absolute bottom-2 left-2 right-2">
-                                    <div className="bg-black/60 rounded-lg p-2">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-white text-xs">Liveness:</span>
-                                            <div className="flex-1 bg-gray-600 rounded-full h-2">
-                                                <div
-                                                    className="bg-green-500 h-2 rounded-full transition-all"
-                                                    style={{ width: `${(movementCountRef.current / 5) * 100}%` }}
-                                                ></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </>
-                    )}
-                </div>
+                        <p className={`text-center font-semibold mb-4 ${status.includes('❌') || status.includes('Timeout') ? 'text-red-600'
+                                : status.includes('✅') || status.includes('✓') ? 'text-green-600'
+                                    : status.includes('📍') ? 'text-orange-500'
+                                        : 'text-indigo-600'
+                            }`}>
+                            {status}
+                        </p>
+                    </>
+                )}
 
-                <p className={`text-center font-semibold mb-4 ${status.includes('❌') || status.includes('Timeout') || status.includes('No face') ? 'text-red-600'
-                        : status.includes('✅') || status.includes('Good') ? 'text-green-600'
-                            : status.includes('📍') ? 'text-orange-500'
-                                : 'text-indigo-600'
-                    }`}>
-                    {status}
-                </p>
-
+                {/* QR Fallback */}
                 {showQRFallback && (
                     <button onClick={goToQR} className="w-full mb-3 py-2.5 bg-purple-600 text-white rounded-lg font-medium">
                         📷 Use QR Code (GPS issue)
                     </button>
                 )}
 
-                <div className="flex gap-3">
-                    <button onClick={onClose} className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">
+                {/* Close button */}
+                {phase !== 'instructions' && (
+                    <button onClick={onClose} className="w-full py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">
                         Cancel
                     </button>
+                )}
 
-                    {phase === 'ready' && (
-                        <button onClick={startDetection} className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-500">
-                            ▶️ Verify Face
-                        </button>
-                    )}
-                </div>
-
-                {phase === 'ready' && !loading && (
-                    <p className="text-xs text-gray-400 text-center mt-3">
-                        Look at camera and move your head slightly
-                    </p>
+                {phase === 'instructions' && (
+                    <button onClick={onClose} className="w-full mt-3 py-2 text-gray-500 text-sm hover:text-gray-700">
+                        Cancel
+                    </button>
                 )}
             </div>
         </div>
