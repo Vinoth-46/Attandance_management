@@ -8,7 +8,8 @@ import os
 import tempfile
 
 app = Flask(__name__)
-CORS(app)
+# Enable CORS for all origins
+CORS(app, resources={r"/*": {"origins": "*", "methods": ["GET", "POST", "OPTIONS"], "allow_headers": ["Content-Type"]}})
 
 # Import DeepFace after app creation
 from deepface import DeepFace
