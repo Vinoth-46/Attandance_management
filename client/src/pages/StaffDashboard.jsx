@@ -149,7 +149,7 @@ export default function StaffDashboard() {
             link.click();
             link.remove();
         } catch (err) {
-            alert('Failed to export: ' + (err.response?.data?.message || err.message));
+            toast.error('Failed to export: ' + (err.response?.data?.message || err.message));
         }
     };
 
@@ -169,7 +169,7 @@ export default function StaffDashboard() {
             link.click();
             link.remove();
         } catch (err) {
-            alert('Failed to export: ' + (err.response?.data?.message || err.message));
+            toast.error('Failed to export: ' + (err.response?.data?.message || err.message));
         }
     };
 
@@ -180,11 +180,11 @@ export default function StaffDashboard() {
                 currentPassword: passwordForm.currentPassword,
                 newPassword: passwordForm.newPassword
             });
-            alert('Password changed successfully!');
+            toast.success('Password changed successfully!');
             setShowPasswordModal(false);
             setPasswordForm({ currentPassword: '', newPassword: '' });
         } catch (err) {
-            alert('Failed to change password: ' + (err.response?.data?.message || err.message));
+            toast.error('Failed to change password: ' + (err.response?.data?.message || err.message));
         }
     };
 
@@ -206,7 +206,7 @@ export default function StaffDashboard() {
             setSessionReports(data);
         } catch (err) {
             console.error('Failed to fetch session reports:', err);
-            alert(err.response?.data?.message || 'Failed to fetch reports');
+            toast.error(err.response?.data?.message || 'Failed to fetch reports');
         } finally {
             setReportsLoading(false);
         }
@@ -215,11 +215,11 @@ export default function StaffDashboard() {
     const updateAttendanceStatus = async (attendanceId, status) => {
         try {
             await api.put('/attendance/update-status', { attendanceId, status });
-            alert(`Attendance updated to ${status}`);
+            toast.success(`Attendance updated to ${status}`);
             fetchSessionReports(); // Refresh
         } catch (err) {
             console.error('Failed to update:', err);
-            alert(err.response?.data?.message || 'Failed to update');
+            toast.error(err.response?.data?.message || 'Failed to update');
         }
     };
 
@@ -278,8 +278,8 @@ export default function StaffDashboard() {
             setShowZoneModal(false);
             setNewZone({ name: '', latitude: '', longitude: '', radius: 50 });
             fetchZones();
-            alert('Zone saved!');
-        } catch (err) { alert(err.response?.data?.message || 'Failed to save zone'); }
+            toast.success('Zone saved!');
+        } catch (err) { toast.error(err.response?.data?.message || 'Failed to save zone'); }
     };
 
     const handleDeleteZone = async (id) => {
@@ -287,7 +287,7 @@ export default function StaffDashboard() {
         try {
             await api.delete(`/zones/${id}`);
             fetchZones();
-        } catch (err) { alert(err.response?.data?.message || 'Failed to delete zone'); }
+        } catch (err) { toast.error(err.response?.data?.message || 'Failed to delete zone'); }
     };
 
     const handleSelectZone = (zoneId) => {
@@ -308,12 +308,12 @@ export default function StaffDashboard() {
 
     const captureZoneLocation = () => {
         if (!navigator.geolocation) {
-            alert('Geolocation is not supported');
+            toast.error('Geolocation is not supported');
             return;
         }
         navigator.geolocation.getCurrentPosition(
             (pos) => setNewZone({ ...newZone, latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
-            (err) => alert('Failed to get location: ' + err.message)
+            (err) => toast.error('Failed to get location: ' + err.message)
         );
     };
 
@@ -323,12 +323,12 @@ export default function StaffDashboard() {
         try {
             await api.put(`/sessions/${sessionId}/close`);
             fetchActiveSessions();
-        } catch (err) { alert(err.response?.data?.message || 'Failed to close session'); }
+        } catch (err) { toast.error(err.response?.data?.message || 'Failed to close session'); }
     };
 
     const loadClassStudents = async () => {
         if (!classFilter.department || !classFilter.year || !classFilter.section) {
-            alert('Please select Department, Year, and Section');
+            toast.warning('Please select Department, Year, and Section');
             return;
         }
         try {
@@ -354,7 +354,7 @@ export default function StaffDashboard() {
     };
 
     const handleSubmitClassAttendance = async () => {
-        if (!classFilter.period) { alert('Please enter a Period'); return; }
+        if (!classFilter.period) { toast.warning('Please enter a Period'); return; }
         setClassSubmitting(true);
         const attendanceList = Object.entries(classAttendance).map(([studentId, status]) => ({ studentId, status }));
         try {
@@ -364,8 +364,8 @@ export default function StaffDashboard() {
                 attendanceList
             });
             setClassSummary(data.summary);
-            alert(data.message);
-        } catch (err) { alert(err.response?.data?.message || 'Failed to submit attendance'); }
+            toast.success(data.message);
+        } catch (err) { toast.error(err.response?.data?.message || 'Failed to submit attendance'); }
         finally { setClassSubmitting(false); }
     };
 
@@ -390,7 +390,7 @@ export default function StaffDashboard() {
         try {
             await api.put(`/attendance/${attendanceId}`, { status: newStatus });
             fetchReports();
-        } catch (err) { alert(err.response?.data?.message || 'Failed to update status'); }
+        } catch (err) { toast.error(err.response?.data?.message || 'Failed to update status'); }
     };
 
     const handleManualAttendance = async (e) => {
@@ -400,7 +400,7 @@ export default function StaffDashboard() {
             setShowManualModal(false);
             setManualAttendance({ studentId: '', date: new Date().toISOString().split('T')[0], status: 'Present' });
             fetchReports();
-        } catch (err) { alert(err.response?.data?.message || 'Failed to mark attendance'); }
+        } catch (err) { toast.error(err.response?.data?.message || 'Failed to mark attendance'); }
     };
 
     const handleImportStudents = async (e) => {
@@ -471,7 +471,7 @@ export default function StaffDashboard() {
                 enableGeofencing: false, location: null
             });
             fetchActiveSessions();
-            alert('Session started!');
+            toast.success('Session started!');
         } catch (err) {
             // Handle session conflict (409)
             if (err.response?.status === 409 && err.response?.data?.conflict) {
@@ -494,17 +494,17 @@ export default function StaffDashboard() {
                         handleStartSession(null, true);
                     }
                 } else {
-                    alert(message + `Please coordinate with ${existingSession.staffName} or wait until their session ends.`);
+                    toast.warning(message + `Please coordinate with ${existingSession.staffName} or wait until their session ends.`);
                 }
             } else {
-                alert(err.response?.data?.message || 'Failed to start session');
+                toast.error(err.response?.data?.message || 'Failed to start session');
             }
         }
     };
 
     const captureLocation = () => {
         if (!navigator.geolocation) {
-            alert('Geolocation is not supported by your browser');
+            toast.error('Geolocation is not supported by your browser');
             return;
         }
         navigator.geolocation.getCurrentPosition(
@@ -517,10 +517,10 @@ export default function StaffDashboard() {
                         radius: 50 // default radius
                     }
                 });
-                alert('Location captured!');
+                toast.success('Location captured!');
             },
             (error) => {
-                alert('Unable to retrieve location: ' + error.message);
+                toast.error('Unable to retrieve location: ' + error.message);
             }
         );
     };
@@ -535,9 +535,9 @@ export default function StaffDashboard() {
             fetchStudents();
             if (user?.isFacultyAdvisor) fetchMyClassData();
             setNewStudent({ name: '', rollNumber: '', dob: '', department: '', year: '', section: '', email: '', phone: '' });
-            alert('Student added successfully!');
+            toast.success('Student added successfully!');
         } catch (err) {
-            alert(err.response?.data?.message || err.message);
+            toast.error(err.response?.data?.message || err.message);
         } finally {
             setAddingStudent(false);
         }
@@ -553,9 +553,9 @@ export default function StaffDashboard() {
             setSelectedStudent(null);
             fetchStudents();
             if (user?.isFacultyAdvisor) fetchMyClassData(); // Refresh My Class data too
-            alert('Student updated successfully!');
+            toast.success('Student updated successfully!');
         } catch (err) {
-            alert(err.response?.data?.message || err.message);
+            toast.error(err.response?.data?.message || err.message);
         } finally {
             setEditingStudent(false);
         }
@@ -597,7 +597,7 @@ export default function StaffDashboard() {
     const handleRejectLeave = async (e) => {
         e.preventDefault();
         if (!rejectionReason.trim()) {
-            alert('Please provide a reason for rejection');
+            toast.warning('Please provide a reason for rejection');
             return;
         }
         try {
@@ -606,7 +606,7 @@ export default function StaffDashboard() {
             setSelectedLeave(null);
             setRejectionReason('');
             fetchAllLeaves();
-        } catch (err) { alert(err.response?.data?.message || err.message); }
+        } catch (err) { toast.error(err.response?.data?.message || err.message); }
     };
 
     // QR Attendance Functions
@@ -627,7 +627,7 @@ export default function StaffDashboard() {
             startQRRefresh(sessionId, data.refreshIn || 30);
         } catch (err) {
             console.error('QR generation failed:', err);
-            alert(err.response?.data?.message || 'Failed to generate QR code');
+            toast.error(err.response?.data?.message || 'Failed to generate QR code');
         } finally {
             setQRLoading(false);
         }
@@ -688,7 +688,7 @@ export default function StaffDashboard() {
             setPeriodWiseData(data);
         } catch (err) {
             console.error('Failed to fetch period-wise data:', err);
-            alert(err.response?.data?.message || 'Failed to fetch period-wise attendance');
+            toast.error(err.response?.data?.message || 'Failed to fetch period-wise attendance');
         } finally {
             setPeriodWiseLoading(false);
         }
@@ -708,12 +708,12 @@ export default function StaffDashboard() {
         if (window.confirm('Are you sure you want to delete this student?')) {
             try {
                 await api.delete(`/admin/students/${id}`);
-                alert('Student deleted successfully');
+                toast.success('Student deleted successfully');
                 fetchStudents();
                 if (user?.isFacultyAdvisor) fetchMyClassData();
             } catch (err) {
                 console.error(err);
-                alert(err.response?.data?.message || 'Failed to delete student');
+                toast.error(err.response?.data?.message || 'Failed to delete student');
             }
         }
     };
@@ -761,7 +761,7 @@ export default function StaffDashboard() {
             setStudents(prev => prev.map(s =>
                 s._id === student._id ? { ...s, canEditProfile: previousValue } : s
             ));
-            alert(err.response?.data?.message || err.message);
+            toast.error(err.response?.data?.message || err.message);
         } finally {
             setTogglingStudentId(null);
         }
