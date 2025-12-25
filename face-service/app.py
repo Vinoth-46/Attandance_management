@@ -4,19 +4,17 @@ import numpy as np
 import base64
 from io import BytesIO
 from PIL import Image
-import cv2
 import os
-from scipy.spatial import distance
+import tempfile
 
 app = Flask(__name__)
 CORS(app)
 
-# Download OpenCV's face detector cascade
-CASCADE_PATH = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-face_cascade = cv2.CascadeClassifier(CASCADE_PATH)
+# Import DeepFace after app creation
+from deepface import DeepFace
 
-def decode_base64_image(base64_str):
-    """Convert base64 string to numpy array"""
+def decode_base64_to_file(base64_str):
+    """Convert base64 string to temp file path"""
     try:
         if ',' in base64_str:
             base64_str = base64_str.split(',')[1]
@@ -27,142 +25,151 @@ def decode_base64_image(base64_str):
         if img.mode != 'RGB':
             img = img.convert('RGB')
         
-        return np.array(img)
+        temp_file = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False)
+        img.save(temp_file.name)
+        return temp_file.name
     except Exception as e:
         print(f"Image decode error: {e}")
         return None
 
-def detect_face(image):
-    """Detect face and return face region + simple descriptor"""
-    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-    faces = face_cascade.detectMultiScale(gray, 1.1, 4, minSize=(50, 50))
-    
-    if len(faces) == 0:
-        return None, None
-    
-    # Get largest face
-    x, y, w, h = max(faces, key=lambda f: f[2] * f[3])
-    
-    # Extract face region
-    face_region = gray[y:y+h, x:x+w]
-    
-    # Resize to fixed size for comparison
-    face_resized = cv2.resize(face_region, (64, 64))
-    
-    # Create simple descriptor (histogram + flattened pixels)
-    hist = cv2.calcHist([face_resized], [0], None, [64], [0, 256]).flatten()
-    hist = hist / hist.sum()  # Normalize
-    
-    return {'x': int(x), 'y': int(y), 'w': int(w), 'h': int(h)}, hist.tolist()
+def cleanup_file(path):
+    try:
+        if path and os.path.exists(path):
+            os.unlink(path)
+    except:
+        pass
 
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({'status': 'ok', 'service': 'face-verification'})
 
 @app.route('/detect', methods=['POST'])
-def detect():
-    """Detect face and return descriptor"""
+def detect_face():
+    """Detect face and return embedding"""
+    img_path = None
     try:
         data = request.json
         image_base64 = data.get('image')
         
         if not image_base64:
-            return jsonify({'success': False, 'error': 'No image'}), 400
+            return jsonify({'success': False, 'error': 'No image provided'}), 400
         
-        image = decode_base64_image(image_base64)
-        if image is None:
+        img_path = decode_base64_to_file(image_base64)
+        if img_path is None:
             return jsonify({'success': False, 'error': 'Invalid image'}), 400
         
-        face_box, descriptor = detect_face(image)
+        embedding = DeepFace.represent(img_path, model_name='Facenet', enforce_detection=True)
+        cleanup_file(img_path)
         
-        if face_box is None:
+        if embedding:
+            return jsonify({
+                'success': True,
+                'faceDetected': True,
+                'faceDescriptor': embedding[0]['embedding']
+            })
+        else:
             return jsonify({'success': False, 'error': 'No face detected'}), 400
-        
-        return jsonify({
-            'success': True,
-            'faceDetected': True,
-            'faceBox': face_box,
-            'faceDescriptor': descriptor
-        })
-        
+            
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        cleanup_file(img_path)
+        return jsonify({'success': False, 'error': str(e)}), 400
 
 @app.route('/verify', methods=['POST'])
-def verify():
-    """Compare two face descriptors"""
+def verify_face():
+    """Compare two faces"""
+    img1_path = img2_path = None
     try:
         data = request.json
-        desc1 = data.get('registeredDescriptor')
-        desc2 = data.get('capturedDescriptor')
+        registered_image = data.get('registeredImage')
+        captured_image = data.get('capturedImage')
         
-        if not desc1 or not desc2:
-            return jsonify({'success': False, 'error': 'Missing descriptors'}), 400
+        if not registered_image or not captured_image:
+            return jsonify({'success': False, 'error': 'Missing images'}), 400
         
-        # Calculate similarity using cosine distance
-        similarity = 1 - distance.cosine(desc1, desc2)
-        match = similarity > 0.7  # Threshold
+        img1_path = decode_base64_to_file(registered_image)
+        img2_path = decode_base64_to_file(captured_image)
+        
+        if not img1_path or not img2_path:
+            cleanup_file(img1_path)
+            cleanup_file(img2_path)
+            return jsonify({'success': False, 'error': 'Invalid images'}), 400
+        
+        result = DeepFace.verify(img1_path, img2_path, model_name='Facenet', enforce_detection=True)
+        cleanup_file(img1_path)
+        cleanup_file(img2_path)
         
         return jsonify({
             'success': True,
-            'match': bool(match),
-            'similarity': float(similarity)
+            'match': result['verified'],
+            'confidence': 1 - result['distance'],
+            'distance': result['distance']
         })
         
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        cleanup_file(img1_path)
+        cleanup_file(img2_path)
+        return jsonify({'success': False, 'error': str(e)}), 400
 
 @app.route('/liveness', methods=['POST'])
-def liveness():
-    """Check liveness by comparing two images for movement"""
+def check_liveness():
+    """Liveness check: Compare two images for movement"""
+    img1_path = img2_path = None
     try:
         data = request.json
-        image1_b64 = data.get('image1')
-        image2_b64 = data.get('image2')
+        image1_base64 = data.get('image1')
+        image2_base64 = data.get('image2')
         
-        if not image1_b64 or not image2_b64:
+        if not image1_base64 or not image2_base64:
             return jsonify({'success': False, 'error': 'Need two images'}), 400
         
-        img1 = decode_base64_image(image1_b64)
-        img2 = decode_base64_image(image2_b64)
+        img1_path = decode_base64_to_file(image1_base64)
+        img2_path = decode_base64_to_file(image2_base64)
         
-        if img1 is None or img2 is None:
+        if not img1_path or not img2_path:
+            cleanup_file(img1_path)
+            cleanup_file(img2_path)
             return jsonify({'success': False, 'error': 'Invalid images'}), 400
         
-        # Detect faces
-        face1, desc1 = detect_face(img1)
-        face2, desc2 = detect_face(img2)
+        # Get face embeddings from both images
+        emb1 = DeepFace.represent(img1_path, model_name='Facenet', enforce_detection=True)
+        emb2 = DeepFace.represent(img2_path, model_name='Facenet', enforce_detection=True)
         
-        if face1 is None or face2 is None:
-            return jsonify({'success': False, 'error': 'Face not detected in both images'}), 400
+        # Get face regions
+        region1 = emb1[0]['facial_area']
+        region2 = emb2[0]['facial_area']
         
         # Calculate movement
         movement = (
-            abs(face1['x'] - face2['x']) +
-            abs(face1['y'] - face2['y']) +
-            abs(face1['w'] - face2['w']) +
-            abs(face1['h'] - face2['h'])
+            abs(region1['x'] - region2['x']) +
+            abs(region1['y'] - region2['y']) +
+            abs(region1['w'] - region2['w']) +
+            abs(region1['h'] - region2['h'])
         )
         
-        # Check if same person (histogram similarity)
-        similarity = 1 - distance.cosine(desc1, desc2)
-        same_person = similarity > 0.6
+        # Compare embeddings to verify same person
+        vec1 = np.array(emb1[0]['embedding'])
+        vec2 = np.array(emb2[0]['embedding'])
+        distance = np.linalg.norm(vec1 - vec2)
+        same_person = distance < 10  # Facenet threshold
         
-        # Liveness: some movement (>3 pixels) and same person
-        is_live = movement > 3 and same_person
+        # Liveness: some movement expected (>2 pixels)
+        is_live = movement > 2 and same_person
+        
+        cleanup_file(img1_path)
+        cleanup_file(img2_path)
         
         return jsonify({
             'success': True,
             'isLive': bool(is_live),
             'movement': float(movement),
             'samePerson': bool(same_person),
-            'similarity': float(similarity),
-            'faceDescriptor': desc2
+            'faceDescriptor': emb2[0]['embedding']
         })
         
     except Exception as e:
-        print(f"Liveness error: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        cleanup_file(img1_path)
+        cleanup_file(img2_path)
+        return jsonify({'success': False, 'error': str(e)}), 400
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
