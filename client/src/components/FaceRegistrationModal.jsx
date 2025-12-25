@@ -15,7 +15,7 @@ export default function FaceRegistrationModal({ student, onClose, onSuccess }) {
 
     useEffect(() => {
         const loadModels = async () => {
-            const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
+            const MODEL_URL = '/models';
             try {
                 await Promise.all([
                     faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),

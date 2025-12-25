@@ -18,7 +18,7 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
         const loadModels = async () => {
             try {
                 setStatus('Loading face models...');
-                const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
+                const MODEL_URL = '/models';
 
                 // Load high-accuracy models
                 await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
