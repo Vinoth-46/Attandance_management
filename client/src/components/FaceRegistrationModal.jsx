@@ -54,19 +54,24 @@ export default function FaceRegistrationModal({ student, onClose, onSuccess }) {
         try {
             let img;
             let dataUrl;
+
+            // Check if it's already a base64 string (from webcam or paste)
             if (typeof imageSource === 'string') {
-                // It's a data URL from webcam - compress it first
-                dataUrl = await compressImage(imageSource, 800, 800, 0.8);
+                // It's a data URL - compress it directly
+                dataUrl = await compressImage(imageSource, 1024, 1024, 0.9);
                 img = await faceapi.fetchImage(dataUrl);
-            } else {
-                // It's a File object - convert and compress
-                const originalDataUrl = await new Promise((resolve) => {
+            } else if (imageSource instanceof Blob || imageSource instanceof File) {
+                // It's a File/Blob object - convert to data URL first
+                const originalDataUrl = await new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
                     reader.readAsDataURL(imageSource);
                 });
-                dataUrl = await compressImage(originalDataUrl, 800, 800, 0.8);
+                dataUrl = await compressImage(originalDataUrl, 1024, 1024, 0.9);
                 img = await faceapi.fetchImage(dataUrl);
+            } else {
+                throw new Error('Invalid image source type');
             }
 
             // Detect Face (High Accuracy)
