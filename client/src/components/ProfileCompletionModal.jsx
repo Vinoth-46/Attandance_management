@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import * as faceapi from 'face-api.js';
+import * as faceapi from '@vladmandic/face-api';
 import Webcam from 'react-webcam';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from './Toast';
+import { initializeFaceApi } from '../utils/faceApiInitializer';
 
 export default function ProfileCompletionModal({ onComplete }) {
     const { user, setUser } = useAuth();
@@ -38,17 +39,13 @@ export default function ProfileCompletionModal({ onComplete }) {
         emergencyContact: ''
     });
 
-    // Load Face API Models
+    // Load Face API Models using centralized initialization
     useEffect(() => {
         const loadModels = async () => {
             try {
                 setLoading(true);
                 setStatus('Loading AI models...');
-                const MODEL_URL = '/models';
-                // Load sequentially
-                await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
-                await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-                await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+                await initializeFaceApi();
                 setStatus('Ready.');
                 setLoading(false);
             } catch (error) {

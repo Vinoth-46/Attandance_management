@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import Webcam from 'react-webcam';
-import * as faceapi from 'face-api.js';
+import * as faceapi from '@vladmandic/face-api';
 import api from '../services/api';
+import { initializeFaceApi } from '../utils/faceApiInitializer';
 
 export default function QRScannerModal({ isOpen, onClose, onSuccess }) {
     const [step, setStep] = useState('qr'); // 'qr', 'face', 'verifying', 'success'
@@ -12,22 +13,12 @@ export default function QRScannerModal({ isOpen, onClose, onSuccess }) {
     const webcamRef = useRef(null);
     const html5QrCodeRef = useRef(null);
 
-    // Load face models when modal opens
+    // Load face models when modal opens using centralized initialization
     useEffect(() => {
         if (isOpen) {
-            const loadModels = async () => {
-                const MODEL_URL = '/models';
-                try {
-                    // Load models sequentially
-                    await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
-                    await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-                    await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
-                    await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
-                } catch (err) {
-                    console.error('Face models load failed:', err);
-                }
-            };
-            loadModels();
+            initializeFaceApi().catch(err => {
+                console.error('Face models load failed:', err);
+            });
         }
     }, [isOpen]);
 
