@@ -49,7 +49,7 @@ const completeProfile = async (req, res) => {
 
             for (const otherStudent of allStudents) {
                 const distance = getEuclideanDistance(faceDescriptor, otherStudent.faceEmbedding);
-                if (distance < 0.6) { // same threshold as attendance
+                if (distance < 0.4) { // Stricter threshold for duplicate detection
                     return res.status(400).json({
                         message: `This face is already registered to another student (${otherStudent.name}). Please use your own photo.`
                     });
@@ -191,7 +191,7 @@ const updatePhoto = async (req, res) => {
         // Track failed attempts
         const failedAttempts = student.photoUpdateFailedAttempts || 0;
 
-        if (distance >= 0.6) {
+        if (distance >= 0.45) {
             // Face doesn't match - increment failed attempts
             student.photoUpdateFailedAttempts = failedAttempts + 1;
             await student.save();

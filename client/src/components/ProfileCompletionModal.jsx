@@ -446,7 +446,7 @@ export default function ProfileCompletionModal({ onComplete }) {
                                                 // Compare faces
                                                 const distance = faceapi.euclideanDistance(detection.descriptor, existingDetection.descriptor);
 
-                                                if (distance < 0.6) {
+                                                if (distance < 0.45) {
                                                     setStatus('✅ Face verified!');
                                                     setVerificationStatus('success');
                                                     setFaceDescriptor(Array.from(detection.descriptor));

@@ -1,5 +1,6 @@
 // Utility to compress images before upload
-export const compressImage = (base64Image, maxWidth = 800, maxHeight = 800, quality = 0.8) => {
+// Optimized for face recognition: higher resolution and quality
+export const compressImage = (base64Image, maxWidth = 1024, maxHeight = 1024, quality = 0.9) => {
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.onload = () => {

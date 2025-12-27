@@ -70,7 +70,7 @@ const markAttendance = async (req, res) => {
         const distance = getEuclideanDistance(Object.values(faceDescriptor), storedFace);
         console.log(`Face Match Distance: ${distance}`);
 
-        if (distance > 0.6) {
+        if (distance >= 0.45) {
             return res.status(401).json({ message: 'Face not matched', distance });
         }
 

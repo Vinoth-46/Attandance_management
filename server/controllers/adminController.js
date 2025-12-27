@@ -269,7 +269,7 @@ const registerStudentFace = async (req, res) => {
 
         for (const otherStudent of allStudents) {
             const distance = getEuclideanDistance(faceDescriptor, otherStudent.faceEmbedding);
-            if (distance < 0.6) {
+            if (distance < 0.4) {
                 return res.status(400).json({
                     message: `This face is already registered to another student (${otherStudent.name}). Duplicate faces are not allowed.`
                 });

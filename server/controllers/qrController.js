@@ -124,7 +124,7 @@ const verifyQRAndMarkAttendance = async (req, res) => {
 
             const distance = getEuclideanDistance(Object.values(faceDescriptor), storedFace);
 
-            if (distance > 0.6) {
+            if (distance > 0.45) {
                 return res.status(401).json({ message: 'Face verification failed', distance });
             }
 
