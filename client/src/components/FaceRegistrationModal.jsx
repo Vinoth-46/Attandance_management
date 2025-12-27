@@ -3,6 +3,7 @@ import Webcam from 'react-webcam';
 import * as faceapi from '@vladmandic/face-api';
 import api from '../services/api';
 import { initializeFaceApi } from '../utils/faceApiInitializer';
+import { compressImage } from '../utils/imageCompression';
 
 export default function FaceRegistrationModal({ student, onClose, onSuccess }) {
     const webcamRef = useRef(null);
@@ -52,16 +53,19 @@ export default function FaceRegistrationModal({ student, onClose, onSuccess }) {
 
         try {
             let img;
+            let dataUrl;
             if (typeof imageSource === 'string') {
-                // It's a data URL from webcam
-                img = await faceapi.fetchImage(imageSource);
+                // It's a data URL from webcam - compress it first
+                dataUrl = await compressImage(imageSource, 800, 800, 0.8);
+                img = await faceapi.fetchImage(dataUrl);
             } else {
-                // It's a File object
-                const dataUrl = await new Promise((resolve) => {
+                // It's a File object - convert and compress
+                const originalDataUrl = await new Promise((resolve) => {
                     const reader = new FileReader();
                     reader.onload = () => resolve(reader.result);
                     reader.readAsDataURL(imageSource);
                 });
+                dataUrl = await compressImage(originalDataUrl, 800, 800, 0.8);
                 img = await faceapi.fetchImage(dataUrl);
             }
 
@@ -80,17 +84,8 @@ export default function FaceRegistrationModal({ student, onClose, onSuccess }) {
             setStatus('Face detected! Registering...');
             const descriptor = Array.from(detections.descriptor);
 
-            // Get the photo as base64 for profilePhoto
-            let photoBase64;
-            if (typeof imageSource === 'string') {
-                photoBase64 = imageSource;
-            } else {
-                photoBase64 = await new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.readAsDataURL(imageSource);
-                });
-            }
+            // Use the already compressed image
+            const photoBase64 = dataUrl;
 
             await api.post(`/admin/students/${student._id}/face`, {
                 faceDescriptor: descriptor,
