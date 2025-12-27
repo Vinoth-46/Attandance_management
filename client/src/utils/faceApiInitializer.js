@@ -13,15 +13,27 @@ export const initializeFaceApi = async () => {
         try {
             console.log("Initialize FaceAPI: Starting initialization sequence...");
 
-            // 1. Force CPU Backend for stability
-            // This MUST happen before any other face-api operations to avoid WebGL crashes
-            console.log("FaceAPI: Forcing CPU backend...");
-            await faceapi.tf.setBackend('cpu');
-            await faceapi.tf.ready();
-            console.log("FaceAPI: Backend ready (cpu)");
+            // 1. Try to Force CPU Backend for stability (if available)
+            // In some bundling environments, faceapi.tf may not be properly exposed
+            if (faceapi.tf && typeof faceapi.tf.setBackend === 'function') {
+                try {
+                    console.log("FaceAPI: Setting CPU backend...");
+                    await faceapi.tf.setBackend('cpu');
+                    await faceapi.tf.ready();
+                    console.log("FaceAPI: Backend ready (cpu)");
+                } catch (backendErr) {
+                    console.warn("FaceAPI: Could not set backend explicitly, using default:", backendErr.message);
+                    // Continue anyway - face-api will use its default backend
+                }
+            } else {
+                console.warn("FaceAPI: tf.setBackend not available, using default backend");
+                // This is okay - face-api.js will initialize its own backend when models load
+            }
 
-            // 2. Load models
+            // 2. Load models (this will trigger backend initialization if not already done)
             const MODEL_URL = '/models';
+
+            console.log("FaceAPI: Loading models...");
 
             // Load necessary models in parallel
             await Promise.all([
