@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import Webcam from 'react-webcam';
 import * as faceapi from 'face-api.js';
 import api from '../services/api';
+import { initializeFaceApi } from '../utils/faceApiInitializer';
 
 export default function FaceRegistrationModal({ student, onClose, onSuccess }) {
     const webcamRef = useRef(null);
@@ -15,18 +16,19 @@ export default function FaceRegistrationModal({ student, onClose, onSuccess }) {
 
     useEffect(() => {
         const loadModels = async () => {
-            const MODEL_URL = '/models';
             try {
-                console.log('Starting model load from:', MODEL_URL);
+                console.log('Starting centralized FaceAPI initialization...');
 
-                // Load models one by one
-                await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
-                await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-                await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+                // Use centralized initialization
+                const success = await initializeFaceApi();
 
-                console.log('Models loaded successfully');
-                setStatus('Ready. Choose webcam or upload a photo.');
-                setLoading(false);
+                if (success) {
+                    console.log('Models loaded successfully');
+                    setStatus('Ready. Choose webcam or upload a photo.');
+                    setLoading(false);
+                } else {
+                    setStatus('Failed to load models. Please refresh.');
+                }
             } catch (err) {
                 console.error('Failed to load models:', err);
                 setStatus(`Failed to load models: ${err.message}`);

@@ -3,6 +3,7 @@ import Webcam from 'react-webcam';
 import * as faceapi from 'face-api.js';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { initializeFaceApi } from '../utils/faceApiInitializer';
 
 export default function FaceAttendanceModal({ onClose, onSuccess }) {
     const webcamRef = useRef(null);
@@ -21,17 +22,19 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
         const loadModels = async () => {
             try {
                 setStatus('Loading face models...');
-                const MODEL_URL = '/models';
 
-                // Load high-accuracy models
-                await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
-                await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-                await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+                // Use centralized initialization
+                const success = await initializeFaceApi();
 
                 if (!cancelled) {
-                    setModelsLoaded(true);
-                    setStatus('Ready! Tap "Mark Attendance"');
-                    setLoading(false);
+                    if (success) {
+                        setModelsLoaded(true);
+                        setStatus('Ready! Tap "Mark Attendance"');
+                        setLoading(false);
+                    } else {
+                        setStatus('Failed to load. Tap to retry.');
+                        setLoading(false);
+                    }
                 }
             } catch (err) {
                 console.error('Model load error:', err);

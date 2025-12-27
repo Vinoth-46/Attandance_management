@@ -1,33 +1,44 @@
 import * as faceapi from 'face-api.js';
 
+// Singleton promise to prevent multiple initialization attempts
+let initializationPromise = null;
+
 export const initializeFaceApi = async () => {
-    try {
-        console.log("Initialize FaceAPI: Pre-loading models...");
-
-        // Instead of touching faceapi.tf directly (which causes crashes),
-        // we simply load the models. This implicitly initializes the backend
-        // and safely puts the models in cache for instant use later.
-
-        // 1. Force CPU Backend for stability (Fixes 'undefined backend' crash)
-        // WebGL is causing issues in this specific bundle environment.
-        console.log("Forcing CPU backend for stability...");
-        await faceapi.tf.setBackend('cpu');
-        await faceapi.tf.ready();
-
-        const MODEL_URL = '/models';
-        console.log("SSD MobileNet Loaded");
-
-        await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-        console.log("Face Landmarks Loaded");
-
-        await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
-        console.log("Face Recognition Loaded");
-
-        console.log("FaceAPI Fully Initialized & Models Cached");
-        return true;
-    } catch (err) {
-        console.error("FaceAPI Initialization Warning:", err);
-        // We ensure we don't crash the app if this fails
-        return false;
+    // If already initializing or initialized, return the existing promise
+    if (initializationPromise) {
+        return initializationPromise;
     }
+
+    initializationPromise = (async () => {
+        try {
+            console.log("Initialize FaceAPI: Starting initialization sequence...");
+
+            // 1. Force CPU Backend for stability
+            // This MUST happen before any other face-api operations to avoid WebGL crashes
+            console.log("FaceAPI: Forcing CPU backend...");
+            await faceapi.tf.setBackend('cpu');
+            await faceapi.tf.ready();
+            console.log("FaceAPI: Backend ready (cpu)");
+
+            // 2. Load models
+            const MODEL_URL = '/models';
+
+            // Load necessary models in parallel
+            await Promise.all([
+                faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+                faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+                faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+            ]);
+
+            console.log("FaceAPI: All models (SSD, Landmarks, Recognition) loaded successfully");
+            return true;
+        } catch (err) {
+            console.error("FaceAPI Critical Initialization Error:", err);
+            // Reset promise to allow retrying if it fails (though backend errors might be fatal)
+            initializationPromise = null;
+            return false;
+        }
+    })();
+
+    return initializationPromise;
 };

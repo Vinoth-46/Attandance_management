@@ -3,6 +3,7 @@ import * as faceapi from 'face-api.js';
 import Webcam from 'react-webcam';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { initializeFaceApi } from '../utils/faceApiInitializer';
 
 export default function PhotoUpdateModal({ onClose, onSuccess, currentPhoto }) {
     const webcamRef = useRef(null);
@@ -23,17 +24,13 @@ export default function PhotoUpdateModal({ onClose, onSuccess, currentPhoto }) {
         setLoading(true);
         setStatus('Loading face detection...');
         try {
-            const MODEL_URL = '/models';
+            // Use centralized initialization
+            const success = await initializeFaceApi();
 
-            // Load models one by one
-            await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
-            await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-            await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
-
-            setModelsLoaded(true);
+            setModelsLoaded(success);
             setLoading(false);
             setStatus('');
-            return true;
+            return success;
         } catch (err) {
             console.error('Failed to load models:', err);
             setStatus('Failed to load face detection');
