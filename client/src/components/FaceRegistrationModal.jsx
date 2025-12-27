@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import Webcam from 'react-webcam';
-import * as faceapi from 'face-api.js';
+import * as faceapi from '@vladmandic/face-api';
 import api from '../services/api';
 import { initializeFaceApi } from '../utils/faceApiInitializer';
 
