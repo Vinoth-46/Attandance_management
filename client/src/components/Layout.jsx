@@ -234,9 +234,13 @@ export default function Layout({ children }) {
 
                 <div className="lg:pl-72">
                     <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
-                        <button type="button" className="-m-2.5 p-2.5 text-gray-700 lg:hidden" onClick={() => setSidebarOpen(true)}>
-                            <span className="sr-only">Open sidebar</span>
+                        <button
+                            type="button"
+                            className="lg:hidden -m-2.5 p-2.5 text-brand-600 hover:text-brand-700 flex items-center gap-2 rounded-md hover:bg-brand-50 transition-colors"
+                            onClick={() => setSidebarOpen(true)}
+                        >
                             <Bars3Icon className="h-6 w-6" aria-hidden="true" />
+                            <span className="text-sm font-semibold">Menu</span>
                         </button>
                         <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6 justify-end items-center">
                             <span className="text-sm text-gray-500">{new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
