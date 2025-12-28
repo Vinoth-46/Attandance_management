@@ -215,7 +215,20 @@ export default function ProfileCompletionModal({ onComplete, onCancel }) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 relative flex flex-col max-h-[90vh]">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">Complete Your Profile</h2>
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-gray-800">Complete Your Profile</h2>
+                    <button
+                        onClick={() => {
+                            if (window.confirm('Are you sure you want to cancel? You won\'t be able to access the dashboard until you complete your profile.')) {
+                                onCancel?.();
+                            }
+                        }}
+                        className="text-gray-400 hover:text-gray-600 text-2xl font-bold leading-none"
+                        aria-label="Cancel"
+                    >
+                        ×
+                    </button>
+                </div>
 
                 <div className="flex-1 overflow-y-auto pr-2">
                     {/* Step 1: Bio Data */}
