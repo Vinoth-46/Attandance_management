@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from './Toast';
 import { initializeFaceApi } from '../utils/faceApiInitializer';
 
-export default function ProfileCompletionModal({ onComplete }) {
+export default function ProfileCompletionModal({ onComplete, onCancel }) {
     const { user, setUser } = useAuth();
     const toast = useToast();
     const webcamRef = useRef(null);

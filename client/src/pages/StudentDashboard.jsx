@@ -30,6 +30,7 @@ export default function StudentDashboard() {
     const [showSessionAlert, setShowSessionAlert] = useState(false);
     const [markedSessionIds, setMarkedSessionIds] = useState([]); // Track sessions where attendance is marked
     const [showProfileCompletion, setShowProfileCompletion] = useState(false); // Profile completion modal
+    const [profileCancelled, setProfileCancelled] = useState(false); // If student cancelled profile completion
     const [showQRScanner, setShowQRScanner] = useState(false); // QR Scanner modal
     const [showPhotoUpdate, setShowPhotoUpdate] = useState(false); // Photo update modal
 
@@ -171,6 +172,43 @@ export default function StudentDashboard() {
             default: return 'bg-yellow-100 text-yellow-800';
         }
     };
+
+    // If profile completion was cancelled, show logout-only screen
+    if (profileCancelled) {
+        return (
+            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+                <div className="bg-white p-8 rounded-lg shadow-xl max-w-md text-center">
+                    <div className="mb-6">
+                        <span className="text-6xl">🔒</span>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Profile Completion Required</h2>
+                    <p className="text-gray-600 mb-6">
+                        Your profile is incomplete. Please complete your profile to access the student dashboard and its features.
+                    </p>
+                    <div className="space-y-3">
+                        <button
+                            onClick={() => {
+                                setProfileCancelled(false);
+                                setShowProfileCompletion(true);
+                            }}
+                            className="w-full px-4 py-3 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-500"
+                        >
+                            Complete Profile Now
+                        </button>
+                        <button
+                            onClick={() => {
+                                localStorage.removeItem('token');
+                                window.location.href = '/login';
+                            }}
+                            className="w-full px-4 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300"
+                        >
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <Layout>
@@ -472,7 +510,12 @@ export default function StudentDashboard() {
                 <ProfileCompletionModal
                     onComplete={() => {
                         setShowProfileCompletion(false);
+                        setProfileCancelled(false);
                         fetchProfile();
+                    }}
+                    onCancel={() => {
+                        setShowProfileCompletion(false);
+                        setProfileCancelled(true);
                     }}
                 />
             )}
