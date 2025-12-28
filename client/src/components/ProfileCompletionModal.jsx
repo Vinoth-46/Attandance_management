@@ -20,23 +20,48 @@ export default function ProfileCompletionModal({ onComplete }) {
     const [previewUrl, setPreviewUrl] = useState(null);
     const [faceDescriptor, setFaceDescriptor] = useState(null);
     const [status, setStatus] = useState('Ready.');
+    const [cameraError, setCameraError] = useState(null);
 
     // Verification mode: if staff pre-added photo, student must verify face
     const hasExistingPhoto = user?.profilePhoto && user.profilePhoto.length > 0;
     const [verificationStatus, setVerificationStatus] = useState(null); // 'success', 'failed', null
 
-    // Form state
-    const [formData, setFormData] = useState({
-        phone: '',
-        address: '',
-        city: '',
-        state: '',
-        pincode: '',
-        bloodGroup: '',
-        fatherName: '',
-        motherName: '',
-        parentPhone: '',
-        emergencyContact: ''
+    // Detect mobile device
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+    // Form state with localStorage persistence
+    const [formData, setFormData] = useState(() => {
+        const saved = localStorage.getItem('profileFormData');
+        if (saved) {
+            try {
+                return JSON.parse(saved);
+            } catch (e) {
+                return {
+                    phone: '',
+                    address: '',
+                    city: '',
+                    state: '',
+                    pincode: '',
+                    bloodGroup: '',
+                    fatherName: '',
+                    motherName: '',
+                    parentPhone: '',
+                    emergencyContact: ''
+                };
+            }
+        }
+        return {
+            phone: '',
+            address: '',
+            city: '',
+            state: '',
+            pincode: '',
+            bloodGroup: '',
+            fatherName: '',
+            motherName: '',
+            parentPhone: '',
+            emergencyContact: ''
+        };
     });
 
     // Load Face API Models using centralized initialization
@@ -56,6 +81,11 @@ export default function ProfileCompletionModal({ onComplete }) {
         };
         loadModels();
     }, []);
+
+    // Auto-save form data to localStorage
+    useEffect(() => {
+        localStorage.setItem('profileFormData', JSON.stringify(formData));
+    }, [formData]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -161,6 +191,9 @@ export default function ProfileCompletionModal({ onComplete }) {
                     faceDescriptor: descriptorArray,
                     profilePhoto: previewUrl // Optional: send base64 photo to save
                 });
+
+                // Clear localStorage after successful submission
+                localStorage.removeItem('profileFormData');
 
                 // Update local user context if needed, or just close
                 if (setUser) {
@@ -394,15 +427,36 @@ export default function ProfileCompletionModal({ onComplete }) {
 
                                     {/* Webcam for verification */}
                                     {!previewUrl && (
-                                        <div className="relative bg-gray-900 rounded-lg overflow-hidden h-48">
-                                            <Webcam
-                                                audio={false}
-                                                ref={webcamRef}
-                                                screenshotFormat="image/jpeg"
-                                                videoConstraints={{ facingMode: 'user' }}
-                                                className="w-full h-full object-cover"
-                                            />
-                                        </div>
+                                        <>
+                                            {isMobile && (
+                                                <div className="bg-blue-50 p-2 rounded text-xs mb-2 text-blue-800">
+                                                    📱 Make sure camera permission is enabled in browser settings
+                                                </div>
+                                            )}
+                                            <div className="relative bg-gray-900 rounded-lg overflow-hidden h-48">
+                                                <Webcam
+                                                    audio={false}
+                                                    ref={webcamRef}
+                                                    screenshotFormat="image/jpeg"
+                                                    videoConstraints={{
+                                                        facingMode: 'user',
+                                                        width: { ideal: 1280 },
+                                                        height: { ideal: 720 }
+                                                    }}
+                                                    onUserMediaError={(error) => {
+                                                        console.error('Camera error:', error);
+                                                        setCameraError('Camera access denied. Please enable camera permissions in your browser settings.');
+                                                    }}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </div>
+                                            {cameraError && (
+                                                <div className="bg-yellow-100 p-3 rounded text-sm text-yellow-800 mt-2">
+                                                    ⚠️ {cameraError}
+                                                    <p className="mt-1 text-xs">Enable camera: Settings → Privacy → Camera → Allow for this site</p>
+                                                </div>
+                                            )}
+                                        </>
                                     )}
 
                                     <button
@@ -446,7 +500,8 @@ export default function ProfileCompletionModal({ onComplete }) {
                                                 // Compare faces
                                                 const distance = faceapi.euclideanDistance(detection.descriptor, existingDetection.descriptor);
 
-                                                if (distance < 0.45) {
+                                                // Relaxed threshold for better verification (was 0.45)
+                                                if (distance < 0.50) {
                                                     setStatus('✅ Face verified!');
                                                     setVerificationStatus('success');
                                                     setFaceDescriptor(Array.from(detection.descriptor));
