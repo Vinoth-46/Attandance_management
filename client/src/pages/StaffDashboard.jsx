@@ -725,6 +725,18 @@ export default function StaffDashboard() {
         }
     };
 
+    const handleResetPassword = async (studentId, studentName) => {
+        if (window.confirm(`Are you sure you want to reset the password for ${studentName} to their Date of Birth?`)) {
+            try {
+                const { data } = await api.put(`/admin/students/${studentId}/reset-password`);
+                toast.success(data.message);
+            } catch (err) {
+                console.error(err);
+                toast.error(err.response?.data?.message || 'Failed to reset password');
+            }
+        }
+    };
+
     const openEditModal = (student) => {
         setSelectedStudent({ ...student });
         setShowEditModal(true);
@@ -962,6 +974,9 @@ export default function StaffDashboard() {
                                             <button onClick={() => handleDeleteStudent(student._id)} className="p-2 text-red-600 hover:bg-red-50 rounded" title="Delete">
                                                 <TrashIcon className="h-5 w-5" />
                                             </button>
+                                            <button onClick={() => handleResetPassword(student._id, student.name)} className="p-2 text-yellow-600 hover:bg-yellow-50 rounded" title="Reset Password">
+                                                <KeyIcon className="h-5 w-5" />
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -1034,6 +1049,7 @@ export default function StaffDashboard() {
                                                     <button onClick={() => openEditModal(student)} className="p-1.5 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded" title="Edit"><PencilIcon className="h-4 w-4" /></button>
                                                     <button onClick={() => openFaceModal(student)} className="p-1.5 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded" title="Register Face"><CameraIcon className="h-4 w-4" /></button>
                                                     <button onClick={() => handleDeleteStudent(student._id)} className="p-1.5 text-red-600 hover:text-red-900 hover:bg-red-50 rounded" title="Delete"><TrashIcon className="h-4 w-4" /></button>
+                                                    <button onClick={() => handleResetPassword(student._id, student.name)} className="p-1.5 text-yellow-600 hover:text-yellow-900 hover:bg-yellow-50 rounded" title="Reset Password"><KeyIcon className="h-4 w-4" /></button>
                                                 </div>
                                             </td>
                                         </tr>

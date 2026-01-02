@@ -55,8 +55,13 @@ export default function Login() {
         // Input date is YYYY-MM-DD (e.g., 2005-01-20)
         // Backend expects DD-MM-YYYY (e.g., 20-01-2005)
         if (!dateString) return '';
-        const [year, month, day] = dateString.split('-');
-        return `${day}-${month}-${year}`;
+        try {
+            const [year, month, day] = dateString.split('-');
+            if (!year || !month || !day) return dateString; // Fallback
+            return `${day}-${month}-${year}`;
+        } catch (e) {
+            return dateString;
+        }
     };
 
     const handleSubmit = async (e) => {

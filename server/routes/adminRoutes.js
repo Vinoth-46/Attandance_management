@@ -19,7 +19,8 @@ const {
     toggleHOD,
     getAdvancedStats,
     getClassFilters,
-    promoteStudents
+    promoteStudents,
+    resetStudentPassword
 } = require('../controllers/adminController');
 const { protect, admin } = require('../middleware/authMiddleware');
 
@@ -100,5 +101,8 @@ router.route('/students/:id/photo-permission')
 
 router.route('/students/:id/approve-photo')
     .put(protect, admin, approvePendingPhoto);
+
+router.route('/students/:id/reset-password')
+    .put(protect, admin, resetStudentPassword);
 
 module.exports = router;

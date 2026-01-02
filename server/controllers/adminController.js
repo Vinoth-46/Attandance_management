@@ -809,6 +809,72 @@ module.exports = {
     toggleHOD,
     getAdvancedStats,
     getClassFilters,
-    promoteStudents
+    promoteStudents,
+    resetStudentPassword
+};
+
+// @desc    Reset student password to DOB (DD-MM-YYYY)
+// @route   PUT /api/admin/students/:id/reset-password
+// @access  Staff/Admin
+const resetStudentPassword = async (req, res) => {
+    try {
+        const student = await User.findById(req.params.id);
+
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        if (student.role !== 'student') {
+            return res.status(400).json({ message: 'Can only reset password for student accounts' });
+        }
+
+        if (!student.dob) {
+            return res.status(400).json({ message: 'Student DOB not set, cannot reset password.' });
+        }
+
+        // Format DOB to DD-MM-YYYY string using UTC to avoid timezone shifts
+        const dob = new Date(student.dob);
+        const day = String(dob.getUTCDate()).padStart(2, '0');
+        const month = String(dob.getUTCMonth() + 1).padStart(2, '0');
+        const year = dob.getUTCFullYear();
+
+        const passwordString = `${day}-${month}-${year}`;
+
+        // Hash the new password
+        const salt = await bcrypt.genSalt(10);
+        student.password = await bcrypt.hash(passwordString, salt);
+
+        // Invalidate sessions
+        student.sessionToken = require('crypto').randomUUID();
+
+        await student.save();
+
+        res.json({ message: `Password reset successfully to ${passwordString}` });
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+module.exports = {
+    addStudent,
+    getStudents,
+    getStudentDetails,
+    updateStudent,
+    toggleEditPermission,
+    togglePhotoPermission,
+    registerStudentFace,
+    getPendingPhotoRequests,
+    approvePendingPhoto,
+    deleteStudent,
+    bulkImportStudents,
+    getMyClassStudents,
+    getMyClassStats,
+    searchStudents,
+    toggleHOD,
+    getAdvancedStats,
+    getClassFilters,
+    promoteStudents,
+    resetStudentPassword
 };
 
