@@ -122,10 +122,23 @@ const verifyQRAndMarkAttendance = async (req, res) => {
                 return Math.sqrt(sum);
             };
 
-            const distance = getEuclideanDistance(Object.values(faceDescriptor), storedFace);
+            // Ensure faceDescriptor is properly converted to array
+            const incomingDescriptor = Array.isArray(faceDescriptor)
+                ? faceDescriptor
+                : Object.values(faceDescriptor);
 
-            if (distance > 0.45) {
-                return res.status(401).json({ message: 'Face verification failed', distance });
+            const distance = getEuclideanDistance(incomingDescriptor, storedFace);
+
+            // Threshold 0.55 balances security with tolerance for real-world variations
+            const FACE_MATCH_THRESHOLD = 0.55;
+
+            console.log(`QR Face Match - Student: ${student.name}, Distance: ${distance.toFixed(4)}, Threshold: ${FACE_MATCH_THRESHOLD}`);
+
+            if (distance > FACE_MATCH_THRESHOLD) {
+                return res.status(401).json({
+                    message: `Face verification failed. Distance: ${distance.toFixed(3)}. Try with better lighting.`,
+                    distance
+                });
             }
 
             // Check liveness

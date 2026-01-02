@@ -188,10 +188,15 @@ const updatePhoto = async (req, res) => {
 
         const distance = getEuclideanDistance(newFaceDescriptor, student.faceEmbedding);
 
+        // Threshold 0.55 balances security with tolerance for real-world variations
+        const FACE_MATCH_THRESHOLD = 0.55;
+
+        console.log(`Photo Update Face Match - Student: ${student.name}, Distance: ${distance.toFixed(4)}, Threshold: ${FACE_MATCH_THRESHOLD}`);
+
         // Track failed attempts
         const failedAttempts = student.photoUpdateFailedAttempts || 0;
 
-        if (distance >= 0.45) {
+        if (distance >= FACE_MATCH_THRESHOLD) {
             // Face doesn't match - increment failed attempts
             student.photoUpdateFailedAttempts = failedAttempts + 1;
             await student.save();

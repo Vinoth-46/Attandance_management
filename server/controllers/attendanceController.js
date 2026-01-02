@@ -67,11 +67,24 @@ const markAttendance = async (req, res) => {
             return res.status(400).json({ message: 'Face not registered. Contact Admin.' });
         }
 
-        const distance = getEuclideanDistance(Object.values(faceDescriptor), storedFace);
-        console.log(`Face Match Distance: ${distance}`);
+        // Ensure faceDescriptor is properly converted to array
+        const incomingDescriptor = Array.isArray(faceDescriptor)
+            ? faceDescriptor
+            : Object.values(faceDescriptor);
 
-        if (distance >= 0.45) {
-            return res.status(401).json({ message: 'Face not matched', distance });
+        const distance = getEuclideanDistance(incomingDescriptor, storedFace);
+
+        // Threshold 0.55 provides good balance between security and tolerance
+        // for lighting/angle variations in real-world conditions
+        const FACE_MATCH_THRESHOLD = 0.55;
+
+        console.log(`Face Match - Student: ${student.name}, Distance: ${distance.toFixed(4)}, Threshold: ${FACE_MATCH_THRESHOLD}`);
+
+        if (distance >= FACE_MATCH_THRESHOLD) {
+            return res.status(401).json({
+                message: `Face not matched. Distance: ${distance.toFixed(3)}. Please ensure good lighting and face the camera directly.`,
+                distance
+            });
         }
 
         // Get Active Session to check Geofence
