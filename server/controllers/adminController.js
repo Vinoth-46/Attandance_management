@@ -791,27 +791,7 @@ const promoteStudents = async (req, res) => {
     }
 };
 
-module.exports = {
-    addStudent,
-    getStudents,
-    getStudentDetails,
-    updateStudent,
-    toggleEditPermission,
-    togglePhotoPermission,
-    registerStudentFace,
-    getPendingPhotoRequests,
-    approvePendingPhoto,
-    deleteStudent,
-    bulkImportStudents,
-    getMyClassStudents,
-    getMyClassStats,
-    searchStudents,
-    toggleHOD,
-    getAdvancedStats,
-    getClassFilters,
-    promoteStudents,
-    resetStudentPassword
-};
+
 
 // @desc    Reset student password to DOB (DD-MM-YYYY)
 // @route   PUT /api/admin/students/:id/reset-password
