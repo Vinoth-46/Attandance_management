@@ -1,16 +1,28 @@
-import { useEffect } from 'react';
+import { useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import { ToastProvider } from './components/Toast';
-import Login from './pages/Login';
-import StudentDashboard from './pages/StudentDashboard';
-import StaffDashboard from './pages/StaffDashboard';
-import SuperAdminDashboard from './pages/SuperAdminDashboard';
-import HODDashboard from './pages/HODDashboard';
-import NotFound from './pages/NotFound';
-import Maintenance from './pages/Maintenance';
 import { initializeFaceApi } from './utils/faceApiInitializer';
+import Maintenance from './pages/Maintenance';
+
+// Lazy Load Pages
+const Login = lazy(() => import('./pages/Login'));
+const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
+const StaffDashboard = lazy(() => import('./pages/StaffDashboard'));
+const SuperAdminDashboard = lazy(() => import('./pages/SuperAdminDashboard'));
+const HODDashboard = lazy(() => import('./pages/HODDashboard'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+
+// Loading Fallback Component
+const LoadingFallback = () => (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+            <div className="w-16 h-16 border-4 border-brand-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600 font-medium">Loading...</p>
+        </div>
+    </div>
+);
 
 // Check if maintenance mode is enabled via environment variable
 // Set VITE_MAINTENANCE_MODE=true in Render environment variables to enable
@@ -60,50 +72,52 @@ function App() {
             <AuthProvider>
                 <SocketProvider>
                     <ToastProvider>
-                        <Routes>
-                            <Route path="/login" element={<Login />} />
+                        <Suspense fallback={<LoadingFallback />}>
+                            <Routes>
+                                <Route path="/login" element={<Login />} />
 
-                            <Route
-                                path="/student/*"
-                                element={
-                                    <ProtectedRoute allowedRoles={['student']}>
-                                        <StudentDashboard />
-                                    </ProtectedRoute>
-                                }
-                            />
+                                <Route
+                                    path="/student/*"
+                                    element={
+                                        <ProtectedRoute allowedRoles={['student']}>
+                                            <StudentDashboard />
+                                        </ProtectedRoute>
+                                    }
+                                />
 
-                            <Route
-                                path="/staff/*"
-                                element={
-                                    <ProtectedRoute allowedRoles={['staff', 'admin']}>
-                                        <StaffDashboard />
-                                    </ProtectedRoute>
-                                }
-                            />
+                                <Route
+                                    path="/staff/*"
+                                    element={
+                                        <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                                            <StaffDashboard />
+                                        </ProtectedRoute>
+                                    }
+                                />
 
-                            <Route
-                                path="/superadmin/*"
-                                element={
-                                    <ProtectedRoute allowedRoles={['superadmin']}>
-                                        <SuperAdminDashboard />
-                                    </ProtectedRoute>
-                                }
-                            />
+                                <Route
+                                    path="/superadmin/*"
+                                    element={
+                                        <ProtectedRoute allowedRoles={['superadmin']}>
+                                            <SuperAdminDashboard />
+                                        </ProtectedRoute>
+                                    }
+                                />
 
-                            <Route
-                                path="/hod/*"
-                                element={
-                                    <ProtectedRoute allowedRoles={['hod']}>
-                                        <HODDashboard />
-                                    </ProtectedRoute>
-                                }
-                            />
+                                <Route
+                                    path="/hod/*"
+                                    element={
+                                        <ProtectedRoute allowedRoles={['hod']}>
+                                            <HODDashboard />
+                                        </ProtectedRoute>
+                                    }
+                                />
 
-                            <Route path="/" element={<Navigate to="/login" />} />
+                                <Route path="/" element={<Navigate to="/login" />} />
 
-                            {/* 404 Page - catches all unmatched routes */}
-                            <Route path="*" element={<NotFound />} />
-                        </Routes>
+                                {/* 404 Page - catches all unmatched routes */}
+                                <Route path="*" element={<NotFound />} />
+                            </Routes>
+                        </Suspense>
                     </ToastProvider>
                 </SocketProvider>
             </AuthProvider>

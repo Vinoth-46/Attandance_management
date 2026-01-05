@@ -19,6 +19,7 @@ export default function StaffDashboard() {
     const [pendingLeaves, setPendingLeaves] = useState([]);
     const [approvedLeaves, setApprovedLeaves] = useState([]);
     const [rejectedLeaves, setRejectedLeaves] = useState([]);
+    const [deletedLeaves, setDeletedLeaves] = useState([]);
     const [reports, setReports] = useState([]);
     const [leaveTab, setLeaveTab] = useState('pending');
 
@@ -372,14 +373,16 @@ export default function StaffDashboard() {
 
     const fetchAllLeaves = async () => {
         try {
-            const [pending, approved, rejected] = await Promise.all([
+            const [pending, approved, rejected, deleted] = await Promise.all([
                 api.get('/leaves/pending'),
                 api.get('/leaves/approved'),
-                api.get('/leaves/rejected')
+                api.get('/leaves/rejected'),
+                api.get('/leaves/deleted')
             ]);
             setPendingLeaves(pending.data);
             setApprovedLeaves(approved.data);
             setRejectedLeaves(rejected.data);
+            setDeletedLeaves(deleted.data);
         } catch (e) { console.error(e); }
     };
 
@@ -803,8 +806,27 @@ export default function StaffDashboard() {
         switch (leaveTab) {
             case 'approved': return approvedLeaves;
             case 'rejected': return rejectedLeaves;
+            case 'deleted': return deletedLeaves;
             default: return pendingLeaves;
         }
+    };
+
+    const handleDeleteLeave = async (id) => {
+        if (!window.confirm('Are you sure you want to move this leave to trash?')) return;
+        try {
+            await api.delete(`/leaves/${id}`);
+            toast.success('Leave moved to trash');
+            fetchAllLeaves();
+        } catch (err) { toast.error(err.response?.data?.message || err.message); }
+    };
+
+    const handleBulkDelete = async () => {
+        if (!window.confirm('Are you sure you want to delete all leaves from the last week? This moves them to trash.')) return;
+        try {
+            const { data } = await api.delete('/leaves/bulk', { data: { criteria: 'last-week' } });
+            toast.success(data.message);
+            fetchAllLeaves();
+        } catch (err) { toast.error(err.response?.data?.message || err.message); }
     };
 
     return (
@@ -1665,6 +1687,12 @@ export default function StaffDashboard() {
                                 <button onClick={() => setLeaveTab('rejected')} className={`${leaveTab === 'rejected' ? 'border-red-500 text-red-600' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'} whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium flex items-center gap-2`}>
                                     ❌ Rejected <span className="bg-red-100 text-red-800 px-2 py-0.5 rounded-full text-xs">{rejectedLeaves.length}</span>
                                 </button>
+                                <button onClick={() => setLeaveTab('deleted')} className={`${leaveTab === 'deleted' ? 'border-gray-500 text-gray-600' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'} whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium flex items-center gap-2`}>
+                                    🗑️ Deleted <span className="bg-gray-100 text-gray-800 px-2 py-0.5 rounded-full text-xs">{deletedLeaves.length}</span>
+                                </button>
+                                <button onClick={handleBulkDelete} className="ml-auto bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1 rounded-md text-sm font-medium flex items-center gap-1 border border-red-200">
+                                    🗑️ Delete Last Week
+                                </button>
                             </nav>
                         </div>
                         <div className="space-y-4">
@@ -1690,6 +1718,13 @@ export default function StaffDashboard() {
                                             <div className="flex gap-2 ml-4">
                                                 <button onClick={() => handleApproveLeave(leave._id)} className="rounded-md bg-green-50 px-3 py-1.5 text-sm font-semibold text-green-600 hover:bg-green-100 flex items-center gap-1"><CheckIcon className="h-4 w-4" />Approve</button>
                                                 <button onClick={() => openRejectModal(leave)} className="rounded-md bg-red-50 px-3 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-100 flex items-center gap-1"><XMarkIcon className="h-4 w-4" />Reject</button>
+                                            </div>
+                                        )}
+                                        {leaveTab !== 'deleted' && (
+                                            <div className="ml-4">
+                                                <button onClick={() => handleDeleteLeave(leave._id)} className="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-red-50" title="Move to Trash">
+                                                    <TrashIcon className="h-5 w-5" />
+                                                </button>
                                             </div>
                                         )}
                                     </div>

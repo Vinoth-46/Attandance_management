@@ -13,7 +13,7 @@ import { PencilIcon, CameraIcon } from '@heroicons/react/20/solid';
 
 export default function StudentDashboard() {
     const { user } = useAuth();
-    const { sessionNotification, dismissNotification } = useSocket();
+    const { sessionNotification, dismissNotification, socket } = useSocket();
     const toast = useToast();
     const [searchParams] = useSearchParams();
     const view = searchParams.get('view') || 'dashboard';
@@ -94,6 +94,41 @@ export default function StudentDashboard() {
             fetchActiveSessions(); // Refresh when session closes
         }
     }, [sessionNotification]);
+
+    // Socket real-time data updates (Live Support)
+    useEffect(() => {
+        if (!socket) return;
+
+        // Leave status update
+        const handleLeaveUpdate = (data) => {
+            console.log('Live Leave Update:', data);
+            toast.info(data.message || 'Leave status updated');
+            fetchMyLeaves(); // <--- LIVE UPDATE
+        };
+
+        // Attendance marked (by self or system)
+        const handleAttendanceMarked = () => {
+            console.log('Live Attendance Update');
+            fetchStats();        // <--- LIVE UPDATE
+            fetchActiveSessions(); // <--- LIVE UPDATE
+        };
+
+        // Profile updated (by staff e.g., photo upload)
+        const handleProfileUpdate = () => {
+            console.log('Live Profile Update');
+            fetchProfile();      // <--- LIVE UPDATE
+        };
+
+        socket.on('leave:updated', handleLeaveUpdate);
+        socket.on('attendance:marked', handleAttendanceMarked);
+        socket.on('profile:updated', handleProfileUpdate); // Assuming this event exists or we add it
+
+        return () => {
+            socket.off('leave:updated', handleLeaveUpdate);
+            socket.off('attendance:marked', handleAttendanceMarked);
+            socket.off('profile:updated', handleProfileUpdate);
+        };
+    }, [socket]);
 
     // Poll for active sessions every 30 seconds
     useEffect(() => {

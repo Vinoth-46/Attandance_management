@@ -23,7 +23,10 @@ export default function ProfileCompletionModal({ onComplete, onCancel }) {
     const [cameraError, setCameraError] = useState(null);
 
     // Verification mode: if staff pre-added photo, student must verify face
-    const hasExistingPhoto = user?.profilePhoto && user.profilePhoto.length > 0;
+    // Use local state for profile photo to ensure freshness
+    const [localProfilePhoto, setLocalProfilePhoto] = useState(user?.profilePhoto);
+    const hasExistingPhoto = localProfilePhoto && localProfilePhoto.length > 0;
+
     const [verificationStatus, setVerificationStatus] = useState(null); // 'success', 'failed', null
 
     // Detect mobile device
@@ -80,6 +83,23 @@ export default function ProfileCompletionModal({ onComplete, onCancel }) {
             }
         };
         loadModels();
+    }, []);
+
+    // Fix Glitch: Fetch fresh profile data on mount to detect staff-uploaded photos immediately
+    useEffect(() => {
+        const fetchFreshProfile = async () => {
+            try {
+                const { data } = await api.get('/auth/profile');
+                if (data && data.profilePhoto) {
+                    setLocalProfilePhoto(data.profilePhoto);
+                    // Also update context if possible, but local state drives the UI now
+                    if (setUser) setUser(data);
+                }
+            } catch (e) {
+                console.error("Failed to fetch fresh profile in modal", e);
+            }
+        };
+        fetchFreshProfile();
     }, []);
 
     // Auto-save form data to localStorage
@@ -409,7 +429,7 @@ export default function ProfileCompletionModal({ onComplete, onCancel }) {
                                         <div className="text-center">
                                             <p className="text-xs text-gray-500 mb-2">Your Registered Photo</p>
                                             <div className="w-32 h-32 mx-auto rounded-lg overflow-hidden border-2 border-gray-200">
-                                                <img src={user.profilePhoto} alt="Registered" className="w-full h-full object-cover" />
+                                                <img src={localProfilePhoto} alt="Registered" className="w-full h-full object-cover" />
                                             </div>
                                         </div>
 
@@ -501,7 +521,7 @@ export default function ProfileCompletionModal({ onComplete, onCancel }) {
                                                 }
 
                                                 // Get face from existing photo
-                                                const existingImg = await faceapi.fetchImage(user.profilePhoto);
+                                                const existingImg = await faceapi.fetchImage(localProfilePhoto);
                                                 const existingDetection = await faceapi.detectSingleFace(existingImg).withFaceLandmarks().withFaceDescriptor();
 
                                                 if (!existingDetection) {
