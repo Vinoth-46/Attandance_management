@@ -8,7 +8,10 @@ const {
     resetStaffPassword,
     assignStaffToClass,
     getMyDepartmentStats,
-    getAllStudentsInDepartment
+    getAllStudentsInDepartment,
+    getDepartmentClasses,
+    getClassPeriodAttendance,
+    getClassAbsentees
 } = require('../controllers/hodController');
 const { protect, hod } = require('../middleware/authMiddleware');
 
@@ -19,6 +22,16 @@ router.use(hod);
 // Department statistics
 router.route('/stats')
     .get(getMyDepartmentStats);
+
+// Classes management
+router.route('/classes')
+    .get(getDepartmentClasses);
+
+router.route('/classes/attendance')
+    .get(getClassPeriodAttendance);
+
+router.route('/classes/absentees')
+    .get(getClassAbsentees);
 
 // Staff management in HOD's department
 router.route('/staff')

@@ -715,6 +715,264 @@ const updateAttendanceStatus = async (req, res) => {
     }
 };
 
+// @desc    Get Faculty Advisor's class overview
+// @route   GET /api/attendance/fa/my-class
+// @access  Faculty Advisor
+const getFAClassOverview = async (req, res) => {
+    try {
+        const staff = await User.findById(req.user.id);
+        if (!staff || !staff.isFacultyAdvisor || !staff.advisorClass) {
+            return res.status(403).json({ message: 'Not authorized as Faculty Advisor' });
+        }
+
+        const { department, year, section } = staff.advisorClass;
+
+        // Get all students in FA's class
+        const students = await User.find({
+            role: 'student',
+            department,
+            year,
+            section: section || { $exists: true }
+        }).select('_id name rollNumber profilePhoto');
+
+        const studentIds = students.map(s => s._id);
+
+        // Get today's attendance stats
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date();
+        endOfDay.setHours(23, 59, 59, 999);
+
+        const todayAttendance = await Attendance.find({
+            student: { $in: studentIds },
+            date: { $gte: startOfDay, $lte: endOfDay }
+        });
+
+        const presentCount = todayAttendance.filter(a => a.status === 'Present').length;
+        const absentCount = todayAttendance.filter(a => a.status === 'Absent').length;
+
+        // Get unique periods today
+        const periodsToday = [...new Set(todayAttendance.map(a => a.period).filter(Boolean))].sort();
+
+        res.json({
+            class: {
+                department,
+                year,
+                section: section || null
+            },
+            totalStudents: students.length,
+            todayStats: {
+                totalPresent: presentCount,
+                totalAbsent: absentCount,
+                periodsMarked: periodsToday.length
+            },
+            periodsToday,
+            students: students.map(s => ({
+                _id: s._id,
+                name: s.name,
+                rollNumber: s.rollNumber,
+                profilePhoto: s.profilePhoto
+            }))
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get period-wise attendance for FA's class only
+// @route   GET /api/attendance/fa/period-wise
+// @access  Faculty Advisor
+const getFAPeriodWiseAttendance = async (req, res) => {
+    const { date } = req.query;
+
+    try {
+        const staff = await User.findById(req.user.id);
+        if (!staff || !staff.isFacultyAdvisor || !staff.advisorClass) {
+            return res.status(403).json({ message: 'Not authorized as Faculty Advisor' });
+        }
+
+        const { department, year, section } = staff.advisorClass;
+
+        // Get students in FA's class
+        const students = await User.find({
+            role: 'student',
+            department,
+            year,
+            section: section || { $exists: true }
+        })
+            .select('_id name rollNumber profilePhoto')
+            .sort({ rollNumber: 1 });
+
+        if (students.length === 0) {
+            return res.json({ students: [], periods: [], classSummary: {} });
+        }
+
+        const studentIds = students.map(s => s._id);
+
+        // Get date range
+        let startDate, endDate;
+        if (date) {
+            startDate = new Date(date);
+            startDate.setHours(0, 0, 0, 0);
+            endDate = new Date(date);
+            endDate.setHours(23, 59, 59, 999);
+        } else {
+            startDate = new Date();
+            startDate.setHours(0, 0, 0, 0);
+            endDate = new Date();
+            endDate.setHours(23, 59, 59, 999);
+        }
+
+        const attendanceRecords = await Attendance.find({
+            student: { $in: studentIds },
+            date: { $gte: startDate, $lte: endDate }
+        }).populate('student', 'name rollNumber');
+
+        // Get unique periods
+        const periods = [...new Set(attendanceRecords.map(a => a.period).filter(Boolean))].sort();
+
+        // Build period-wise attendance map
+        const attendanceMap = {};
+        attendanceRecords.forEach(a => {
+            const studentId = a.student._id.toString();
+            if (!attendanceMap[studentId]) {
+                attendanceMap[studentId] = {};
+            }
+            attendanceMap[studentId][a.period] = {
+                status: a.status,
+                time: a.time
+            };
+        });
+
+        // Build result
+        const result = students.map(s => {
+            const studentAttendance = attendanceMap[s._id.toString()] || {};
+            const periodData = {};
+            let presentCount = 0;
+            let absentCount = 0;
+
+            periods.forEach(p => {
+                if (studentAttendance[p]) {
+                    periodData[p] = studentAttendance[p];
+                    if (studentAttendance[p].status === 'Present') presentCount++;
+                    else if (studentAttendance[p].status === 'Absent') absentCount++;
+                } else {
+                    periodData[p] = { status: 'Not Marked', time: null };
+                }
+            });
+
+            return {
+                _id: s._id,
+                name: s.name,
+                rollNumber: s.rollNumber,
+                profilePhoto: s.profilePhoto,
+                periods: periodData,
+                summary: {
+                    present: presentCount,
+                    absent: absentCount,
+                    total: periods.length
+                }
+            };
+        });
+
+        // Class summary
+        const classSummary = {};
+        periods.forEach(p => {
+            const present = result.filter(r => r.periods[p]?.status === 'Present').length;
+            const absent = result.filter(r => r.periods[p]?.status === 'Absent').length;
+            const notMarked = result.filter(r => r.periods[p]?.status === 'Not Marked').length;
+            classSummary[p] = { present, absent, notMarked, total: students.length };
+        });
+
+        res.json({
+            date: startDate.toISOString().split('T')[0],
+            class: {
+                department,
+                year,
+                section: section || null
+            },
+            students: result,
+            periods,
+            classSummary
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get absentees for specific period (for staff immediate view after marking)
+// @route   GET /api/attendance/period-absentees
+// @access  Staff/Admin
+const getPeriodAbsentees = async (req, res) => {
+    const { department, year, section, period, date } = req.query;
+
+    if (!department || !year || !period) {
+        return res.status(400).json({ message: 'Department, year, and period are required' });
+    }
+
+    try {
+        // Get students in this class
+        const studentQuery = {
+            role: 'student',
+            department,
+            year
+        };
+        if (section) studentQuery.section = section;
+
+        const students = await User.find(studentQuery)
+            .select('_id name rollNumber profilePhoto phone parentPhone email');
+
+        const studentIds = students.map(s => s._id);
+
+        // Get date range
+        let startDate, endDate;
+        if (date) {
+            startDate = new Date(date);
+            startDate.setHours(0, 0, 0, 0);
+            endDate = new Date(date);
+            endDate.setHours(23, 59, 59, 999);
+        } else {
+            startDate = new Date();
+            startDate.setHours(0, 0, 0, 0);
+            endDate = new Date();
+            endDate.setHours(23, 59, 59, 999);
+        }
+
+        const attendanceRecords = await Attendance.find({
+            student: { $in: studentIds },
+            date: { $gte: startDate, $lte: endDate },
+            period: period,
+            status: 'Absent'
+        }).populate('student');
+
+        const absentees = attendanceRecords.map(a => ({
+            _id: a.student._id,
+            name: a.student.name,
+            rollNumber: a.student.rollNumber,
+            profilePhoto: a.student.profilePhoto,
+            phone: a.student.phone,
+            parentPhone: a.student.parentPhone,
+            email: a.student.email,
+            period: a.period,
+            status: a.status,
+            markedAt: a.time
+        }));
+
+        res.json({
+            date: startDate.toISOString().split('T')[0],
+            department,
+            year,
+            section: section || null,
+            period,
+            totalStudents: students.length,
+            absentCount: absentees.length,
+            absentees
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     markAttendance,
     markManualAttendance,
@@ -727,5 +985,8 @@ module.exports = {
     getClassAttendanceStatus,
     getClassFilters,
     getFAAbsentees,
-    getPeriodWiseAttendance
+    getPeriodWiseAttendance,
+    getFAClassOverview,
+    getFAPeriodWiseAttendance,
+    getPeriodAbsentees
 };

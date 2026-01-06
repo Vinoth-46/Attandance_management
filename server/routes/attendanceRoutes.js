@@ -12,7 +12,10 @@ const {
     getClassAttendanceStatus,
     getClassFilters,
     getFAAbsentees,
-    getPeriodWiseAttendance
+    getPeriodWiseAttendance,
+    getFAClassOverview,
+    getFAPeriodWiseAttendance,
+    getPeriodAbsentees
 } = require('../controllers/attendanceController');
 const { protect, admin } = require('../middleware/authMiddleware');
 
@@ -27,9 +30,19 @@ router.route('/my')
 router.route('/fa/absentees')
     .get(protect, getFAAbsentees);
 
+router.route('/fa/my-class')
+    .get(protect, getFAClassOverview);
+
+router.route('/fa/period-wise')
+    .get(protect, getFAPeriodWiseAttendance);
+
 // Period-wise attendance report (FA and Super Admin)
 router.route('/period-wise')
     .get(protect, admin, getPeriodWiseAttendance);
+
+// Period absentees (Staff immediate view after marking)
+router.route('/period-absentees')
+    .get(protect, admin, getPeriodAbsentees);
 
 // Admin routes - Class-based attendance
 router.route('/class/filters')

@@ -58,9 +58,9 @@ export default function Layout({ children }) {
     // Build staff navigation dynamically based on Faculty Advisor status
     const staffNavigation = [
         ...(user?.isFacultyAdvisor ? [
-            { name: 'My Class', href: '/staff/dashboard?view=myclass', icon: HomeIcon },
-            { name: 'Students', href: '/staff/dashboard?view=students', icon: UsersIcon },
+            { name: 'My Class', href: '/staff/my-class', icon: HomeIcon },
         ] : []),
+        { name: 'Students', href: '/staff/dashboard?view=students', icon: UsersIcon },
         { name: 'Attendance', href: '/staff/dashboard?view=session', icon: CalendarDaysIcon },
         { name: 'Period-Wise', href: '/staff/dashboard?view=period-wise', icon: TableCellsIcon },
         ...(user?.isFacultyAdvisor ? [{ name: 'Leave Requests', href: '/staff/dashboard?view=leaves', icon: DocumentTextIcon }] : []),

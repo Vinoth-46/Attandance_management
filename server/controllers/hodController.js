@@ -325,6 +325,282 @@ const getAllStudentsInDepartment = async (req, res) => {
     }
 };
 
+// @desc    Get all classes in HOD's department
+// @route   GET /api/hod/classes
+// @access  HOD
+const getDepartmentClasses = async (req, res) => {
+    try {
+        const hod = await User.findById(req.user.id);
+        if (!hod || !hod.assignedDepartment) {
+            return res.status(400).json({ message: 'HOD not assigned to any department' });
+        }
+
+        // Get all unique year-section combinations in the department
+        const students = await User.aggregate([
+            {
+                $match: {
+                    role: 'student',
+                    department: hod.assignedDepartment
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        year: '$year',
+                        section: '$section'
+                    },
+                    totalStudents: { $sum: 1 }
+                }
+            },
+            {
+                $sort: { '_id.year': 1, '_id.section': 1 }
+            }
+        ]);
+
+        // Get today's attendance stats for each class
+        const Attendance = require('../models/Attendance');
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date();
+        endOfDay.setHours(23, 59, 59, 999);
+
+        const classesWithStats = await Promise.all(students.map(async (cls) => {
+            const classStudents = await User.find({
+                role: 'student',
+                department: hod.assignedDepartment,
+                year: cls._id.year,
+                section: cls._id.section || { $exists: true }
+            });
+
+            const studentIds = classStudents.map(s => s._id);
+
+            // Get today's attendance
+            const todayAttendance = await Attendance.find({
+                student: { $in: studentIds },
+                date: { $gte: startOfDay, $lte: endOfDay }
+            });
+
+            const presentCount = todayAttendance.filter(a => a.status === 'Present').length;
+            const absentCount = todayAttendance.filter(a => a.status === 'Absent').length;
+
+            // Get faculty advisor if any
+            const advisor = await User.findOne({
+                role: 'staff',
+                isFacultyAdvisor: true,
+                'advisorClass.department': hod.assignedDepartment,
+                'advisorClass.year': cls._id.year,
+                'advisorClass.section': cls._id.section || null
+            }).select('name email');
+
+            return {
+                year: cls._id.year,
+                section: cls._id.section || null,
+                department: hod.assignedDepartment,
+                totalStudents: cls.totalStudents,
+                todayPresent: presentCount,
+                todayAbsent: absentCount,
+                attendancePercentage: cls.totalStudents > 0 ? Math.round(((presentCount / cls.totalStudents) * 100)) : 0,
+                facultyAdvisor: advisor ? { name: advisor.name, email: advisor.email } : null
+            };
+        }));
+
+        res.json(classesWithStats);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get period-wise attendance for a specific class
+// @route   GET /api/hod/classes/attendance
+// @access  HOD
+const getClassPeriodAttendance = async (req, res) => {
+    const { year, section, date } = req.query;
+
+    try {
+        const hod = await User.findById(req.user.id);
+        if (!hod || !hod.assignedDepartment) {
+            return res.status(400).json({ message: 'HOD not assigned to any department' });
+        }
+
+        // Get students in this class
+        const studentQuery = {
+            role: 'student',
+            department: hod.assignedDepartment,
+            year: year
+        };
+        if (section) studentQuery.section = section;
+
+        const students = await User.find(studentQuery)
+            .select('_id name rollNumber profilePhoto')
+            .sort({ rollNumber: 1 });
+
+        if (students.length === 0) {
+            return res.json({ students: [], periods: [], classSummary: {} });
+        }
+
+        const studentIds = students.map(s => s._id);
+
+        // Get date range
+        let startDate, endDate;
+        if (date) {
+            startDate = new Date(date);
+            startDate.setHours(0, 0, 0, 0);
+            endDate = new Date(date);
+            endDate.setHours(23, 59, 59, 999);
+        } else {
+            startDate = new Date();
+            startDate.setHours(0, 0, 0, 0);
+            endDate = new Date();
+            endDate.setHours(23, 59, 59, 999);
+        }
+
+        const Attendance = require('../models/Attendance');
+        const attendanceRecords = await Attendance.find({
+            student: { $in: studentIds },
+            date: { $gte: startDate, $lte: endDate }
+        }).populate('student', 'name rollNumber');
+
+        // Get unique periods
+        const periods = [...new Set(attendanceRecords.map(a => a.period).filter(Boolean))].sort();
+
+        // Build period-wise attendance map
+        const attendanceMap = {};
+        attendanceRecords.forEach(a => {
+            const studentId = a.student._id.toString();
+            if (!attendanceMap[studentId]) {
+                attendanceMap[studentId] = {};
+            }
+            attendanceMap[studentId][a.period] = {
+                status: a.status,
+                time: a.time
+            };
+        });
+
+        // Build result
+        const result = students.map(s => {
+            const studentAttendance = attendanceMap[s._id.toString()] || {};
+            const periodData = {};
+            let presentCount = 0;
+            let absentCount = 0;
+
+            periods.forEach(p => {
+                if (studentAttendance[p]) {
+                    periodData[p] = studentAttendance[p];
+                    if (studentAttendance[p].status === 'Present') presentCount++;
+                    else if (studentAttendance[p].status === 'Absent') absentCount++;
+                } else {
+                    periodData[p] = { status: 'Not Marked', time: null };
+                }
+            });
+
+            return {
+                _id: s._id,
+                name: s.name,
+                rollNumber: s.rollNumber,
+                profilePhoto: s.profilePhoto,
+                periods: periodData,
+                summary: {
+                    present: presentCount,
+                    absent: absentCount,
+                    total: periods.length
+                }
+            };
+        });
+
+        // Class summary
+        const classSummary = {};
+        periods.forEach(p => {
+            const present = result.filter(r => r.periods[p]?.status === 'Present').length;
+            const absent = result.filter(r => r.periods[p]?.status === 'Absent').length;
+            const notMarked = result.filter(r => r.periods[p]?.status === 'Not Marked').length;
+            classSummary[p] = { present, absent, notMarked, total: students.length };
+        });
+
+        res.json({
+            date: startDate.toISOString().split('T')[0],
+            year,
+            section: section || null,
+            department: hod.assignedDepartment,
+            students: result,
+            periods,
+            classSummary
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get detailed absentee list for a class, date, and period
+// @route   GET /api/hod/classes/absentees
+// @access  HOD
+const getClassAbsentees = async (req, res) => {
+    const { year, section, date, period } = req.query;
+
+    if (!year || !date || !period) {
+        return res.status(400).json({ message: 'Year, date, and period are required' });
+    }
+
+    try {
+        const hod = await User.findById(req.user.id);
+        if (!hod || !hod.assignedDepartment) {
+            return res.status(400).json({ message: 'HOD not assigned to any department' });
+        }
+
+        // Get students in this class
+        const studentQuery = {
+            role: 'student',
+            department: hod.assignedDepartment,
+            year: year
+        };
+        if (section) studentQuery.section = section;
+
+        const students = await User.find(studentQuery)
+            .select('_id name rollNumber profilePhoto phone parentPhone email');
+
+        const studentIds = students.map(s => s._id);
+
+        // Get date range
+        const startDate = new Date(date);
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(date);
+        endDate.setHours(23, 59, 59, 999);
+
+        const Attendance = require('../models/Attendance');
+        const attendanceRecords = await Attendance.find({
+            student: { $in: studentIds },
+            date: { $gte: startDate, $lte: endDate },
+            period: period,
+            status: 'Absent'
+        }).populate('student');
+
+        const absentees = attendanceRecords.map(a => ({
+            _id: a.student._id,
+            name: a.student.name,
+            rollNumber: a.student.rollNumber,
+            profilePhoto: a.student.profilePhoto,
+            phone: a.student.phone,
+            parentPhone: a.student.parentPhone,
+            email: a.student.email,
+            period: a.period,
+            status: a.status,
+            markedAt: a.time
+        }));
+
+        res.json({
+            date: startDate.toISOString().split('T')[0],
+            year,
+            section: section || null,
+            department: hod.assignedDepartment,
+            period,
+            totalStudents: students.length,
+            absentCount: absentees.length,
+            absentees
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     getAllStaffInDepartment,
     createStaff,
@@ -333,5 +609,8 @@ module.exports = {
     resetStaffPassword,
     assignStaffToClass,
     getMyDepartmentStats,
-    getAllStudentsInDepartment
+    getAllStudentsInDepartment,
+    getDepartmentClasses,
+    getClassPeriodAttendance,
+    getClassAbsentees
 };

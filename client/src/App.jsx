@@ -12,6 +12,7 @@ const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
 const StaffDashboard = lazy(() => import('./pages/StaffDashboard'));
 const SuperAdminDashboard = lazy(() => import('./pages/SuperAdminDashboard'));
 const HODDashboard = lazy(() => import('./pages/HODDashboard'));
+const FacultyAdvisorClass = lazy(() => import('./pages/FacultyAdvisorClass'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 // Loading Fallback Component

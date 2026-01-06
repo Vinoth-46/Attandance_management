@@ -273,29 +273,29 @@ export default function SuperAdminDashboard() {
                 {/* Header */}
                 <div className="sm:flex sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Super Admin Dashboard</h1>
-                        <p className="mt-1 text-sm text-gray-500">Manage staff, faculty advisors, HODs, and system settings</p>
+                        <h1 className="text-2xl font-bold text-gradient">Super Admin Dashboard</h1>
+                        <p className="mt-1 text-sm text-slate-400">Manage staff, faculty advisors, HODs, and system settings</p>
                     </div>
                 </div>
 
                 {/* Message Alert */}
                 {message.text && (
-                    <div className={`rounded-md p-4 ${message.type === 'success' ? 'bg-green-50' : 'bg-red-50'}`}>
+                    <div className={`glass-card p-4 border-l-4 ${message.type === 'success' ? 'border-l-emerald-500' : 'border-l-red-500'}`}>
                         <div className="flex">
                             <div className="flex-shrink-0">
                                 {message.type === 'success' ? (
-                                    <CheckIcon className="h-5 w-5 text-green-400" />
+                                    <CheckIcon className="h-5 w-5 text-emerald-400" />
                                 ) : (
                                     <XMarkIcon className="h-5 w-5 text-red-400" />
                                 )}
                             </div>
                             <div className="ml-3">
-                                <p className={`text-sm font-medium ${message.type === 'success' ? 'text-green-800' : 'text-red-800'}`}>
+                                <p className={`text-sm font-medium ${message.type === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
                                     {message.text}
                                 </p>
                             </div>
                             <div className="ml-auto pl-3">
-                                <button onClick={() => setMessage({ type: '', text: '' })} className="inline-flex text-gray-400 hover:text-gray-500">
+                                <button onClick={() => setMessage({ type: '', text: '' })} className="inline-flex text-slate-400 hover:text-white">
                                     <XMarkIcon className="h-5 w-5" />
                                 </button>
                             </div>
@@ -304,15 +304,15 @@ export default function SuperAdminDashboard() {
                 )}
 
                 {/* Tabs */}
-                <div className="border-b border-gray-200">
+                <div className="border-b border-white/10">
                     <nav className="-mb-px flex space-x-8 overflow-x-auto">
                         {tabs.map((tab) => (
                             <button
                                 key={tab.id}
                                 onClick={() => setSearchParams({ view: tab.id })}
                                 className={`${currentView === tab.id
-                                    ? 'border-brand-500 text-brand-600'
-                                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                                    ? 'border-blue-500 text-blue-400'
+                                    : 'border-transparent text-slate-400 hover:border-slate-500 hover:text-slate-300'
                                     } whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium flex items-center gap-2`}
                             >
                                 <tab.icon className="h-5 w-5" />
@@ -327,42 +327,42 @@ export default function SuperAdminDashboard() {
                     <div className="space-y-6">
                         {/* Stats Cards */}
                         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                            <div className="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                                <dt className="truncate text-sm font-medium text-gray-500">Total Students</dt>
-                                <dd className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">{stats.totalStudents}</dd>
+                            <div className="stat-card">
+                                <dt className="truncate text-sm font-medium text-slate-400">Total Students</dt>
+                                <dd className="mt-1 text-3xl font-semibold tracking-tight text-white">{stats.totalStudents}</dd>
                             </div>
-                            <div className="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                                <dt className="truncate text-sm font-medium text-gray-500">Total Staff</dt>
-                                <dd className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">{stats.totalStaff}</dd>
+                            <div className="stat-card">
+                                <dt className="truncate text-sm font-medium text-slate-400">Total Staff</dt>
+                                <dd className="mt-1 text-3xl font-semibold tracking-tight text-white">{stats.totalStaff}</dd>
                             </div>
-                            <div className="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                                <dt className="truncate text-sm font-medium text-gray-500">Total HODs</dt>
-                                <dd className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">{stats.totalHODs}</dd>
+                            <div className="stat-card">
+                                <dt className="truncate text-sm font-medium text-slate-400">Total HODs</dt>
+                                <dd className="mt-1 text-3xl font-semibold tracking-tight text-white">{stats.totalHODs}</dd>
                             </div>
-                            <div className="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                                <dt className="truncate text-sm font-medium text-gray-500">Faculty Advisors</dt>
-                                <dd className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">{stats.facultyAdvisors}</dd>
+                            <div className="stat-card">
+                                <dt className="truncate text-sm font-medium text-slate-400">Faculty Advisors</dt>
+                                <dd className="mt-1 text-3xl font-semibold tracking-tight text-white">{stats.facultyAdvisors}</dd>
                             </div>
                         </div>
 
                         {/* Advanced Stats: Department Breakdown */}
                         {advancedStats && advancedStats.deptStats && (
-                            <div className="bg-white shadow rounded-lg p-6">
-                                <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-                                    <ChartBarIcon className="h-5 w-5 text-brand-600" />
+                            <div className="glass-card p-6">
+                                <h3 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
+                                    <ChartBarIcon className="h-5 w-5 text-blue-400" />
                                     Today's Attendance by Department
                                 </h3>
                                 <div className="space-y-4">
                                     {advancedStats.deptStats.map((dept) => (
                                         <div key={dept.department}>
-                                            <div className="flex items-center justify-between text-sm font-medium text-gray-600">
+                                            <div className="flex items-center justify-between text-sm font-medium text-slate-400">
                                                 <span>{dept.department}</span>
-                                                <span className="text-gray-900">{dept.percentage}% ({dept.present}/{dept.total})</span>
+                                                <span className="text-white">{dept.percentage}% ({dept.present}/{dept.total})</span>
                                             </div>
-                                            <div className="mt-1 w-full bg-gray-200 rounded-full h-2.5">
+                                            <div className="mt-1 w-full bg-slate-700 rounded-full h-2.5">
                                                 <div
-                                                    className={`h-2.5 rounded-full ${parseFloat(dept.percentage) >= 75 ? 'bg-green-600' : parseFloat(dept.percentage) >= 50 ? 'bg-yellow-500' : 'bg-red-600'}`}
-                                                    style={{ width: `${dept.percentage}%` }} // Ensure string value is handled
+                                                    className={`h-2.5 rounded-full ${parseFloat(dept.percentage) >= 75 ? 'bg-emerald-500' : parseFloat(dept.percentage) >= 50 ? 'bg-amber-500' : 'bg-red-500'}`}
+                                                    style={{ width: `${dept.percentage}%` }}
                                                 ></div>
                                             </div>
                                         </div>
@@ -372,26 +372,26 @@ export default function SuperAdminDashboard() {
                         )}
 
                         {/* Quick Actions */}
-                        <div className="bg-white shadow rounded-lg p-6">
-                            <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
+                        <div className="glass-card p-6">
+                            <h3 className="text-lg font-medium text-white mb-4">Quick Actions</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <button
                                     onClick={() => { setSearchParams({ view: 'staff' }); setShowAddModal(true); }}
-                                    className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 p-4 text-gray-600 hover:border-brand-500 hover:text-brand-600 transition-colors"
+                                    className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/20 p-4 text-slate-400 hover:border-blue-500 hover:text-blue-400 transition-colors"
                                 >
                                     <PlusIcon className="h-6 w-6" />
                                     <span>Add New Staff</span>
                                 </button>
                                 <button
                                     onClick={() => setSearchParams({ view: 'advisors' })}
-                                    className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 p-4 text-gray-600 hover:border-brand-500 hover:text-brand-600 transition-colors"
+                                    className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/20 p-4 text-slate-400 hover:border-emerald-500 hover:text-emerald-400 transition-colors"
                                 >
                                     <AcademicCapIcon className="h-6 w-6" />
                                     <span>Manage Advisors</span>
                                 </button>
                                 <button
                                     onClick={() => setSearchParams({ view: 'hods' })}
-                                    className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 p-4 text-gray-600 hover:border-brand-500 hover:text-brand-600 transition-colors"
+                                    className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/20 p-4 text-slate-400 hover:border-purple-500 hover:text-purple-400 transition-colors"
                                 >
                                     <BuildingLibraryIcon className="h-6 w-6" />
                                     <span>Manage HODs</span>

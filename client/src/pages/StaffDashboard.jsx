@@ -833,16 +833,16 @@ export default function StaffDashboard() {
         <Layout>
             {/* Faculty Advisor Banner - Only shows for Faculty Advisors */}
             {user?.isFacultyAdvisor && (
-                <div className="mb-6 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4">
+                <div className="mb-6 glass-card p-4 border-l-4 border-l-purple-500">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-lg font-bold text-purple-800">📋 Faculty Advisor</p>
-                            <p className="text-sm text-purple-700">
+                            <p className="text-lg font-bold text-purple-400">📋 Faculty Advisor</p>
+                            <p className="text-sm text-slate-300">
                                 Class Incharge: {user.advisorClass?.department} Year {user.advisorClass?.year}
                                 {user.advisorClass?.section && ` - Section ${user.advisorClass?.section}`}
                             </p>
                         </div>
-                        <a href="/staff/dashboard?view=session" className="px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-500 text-sm">
+                        <a href="/staff/dashboard?view=session" className="premium-btn premium-btn-purple">
                             📝 Mark Class Attendance
                         </a>
                     </div>
@@ -851,14 +851,14 @@ export default function StaffDashboard() {
 
             {/* Super Admin Banner */}
             {user?.role === 'superadmin' && (
-                <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+                <div className="mb-6 glass-card p-4 border-l-4 border-l-blue-500">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-lg font-bold text-blue-800">🛡️ Super Admin Control</p>
-                            <p className="text-sm text-blue-700">Manage Staff, Assign Advisors, and View Reports</p>
+                            <p className="text-lg font-bold text-blue-400">🛡️ Super Admin Control</p>
+                            <p className="text-sm text-slate-300">Manage Staff, Assign Advisors, and View Reports</p>
                         </div>
                         <div className="flex gap-2">
-                            <a href="/staff/dashboard?view=staff" className={`px-4 py-2 rounded-lg font-medium text-sm ${view === 'staff' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border border-blue-200 hover:bg-blue-50'}`}>
+                            <a href="/staff/dashboard?view=staff" className={`premium-btn ${view === 'staff' ? '' : 'premium-btn-outline'}`}>
                                 👥 Staff Management
                             </a>
                         </div>
@@ -911,7 +911,7 @@ export default function StaffDashboard() {
             {/* Page Header */}
             <div className="md:flex md:items-center md:justify-between mb-8">
                 <div className="min-w-0 flex-1">
-                    <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+                    <h2 className="text-2xl font-bold leading-7 text-gradient sm:truncate sm:text-3xl sm:tracking-tight">
                         {getTitle()}
                     </h2>
                 </div>
@@ -919,20 +919,20 @@ export default function StaffDashboard() {
                     <div className="mt-4 flex gap-2 md:ml-4 md:mt-0">
                         <button
                             onClick={() => setShowPasswordModal(true)}
-                            className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+                            className="premium-btn premium-btn-outline"
                         >
-                            <KeyIcon className="-ml-0.5 mr-1.5 h-5 w-5 text-gray-400" />
+                            <KeyIcon className="-ml-0.5 mr-1.5 h-5 w-5" />
                             Password
                         </button>
                         <button
                             onClick={() => setShowImportModal(true)}
-                            className="inline-flex items-center rounded-md bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-200 border"
+                            className="premium-btn premium-btn-outline"
                         >
                             📥 Import Excel
                         </button>
                         <button
                             onClick={() => setShowAddModal(true)}
-                            className="inline-flex items-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500"
+                            className="premium-btn premium-btn-green"
                         >
                             <PlusIcon className="-ml-0.5 mr-1.5 h-5 w-5" />
                             Add Student
@@ -950,53 +950,53 @@ export default function StaffDashboard() {
                         <div className="sm:hidden space-y-3">
                             {loadingStudents && (
                                 <div className="py-12 text-center">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600 mx-auto"></div>
-                                    <p className="text-gray-500 mt-3">Loading students...</p>
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                                    <p className="text-slate-400 mt-3">Loading students...</p>
                                 </div>
                             )}
                             {!loadingStudents && students.length === 0 && (
-                                <div className="py-8 text-center text-gray-500">No students found.</div>
+                                <div className="py-8 text-center text-slate-500">No students found.</div>
                             )}
                             {!loadingStudents && students.map((student) => (
-                                <div key={student._id} className="bg-white shadow rounded-lg p-4 border">
+                                <div key={student._id} className="glass-card p-4">
                                     <div className="flex justify-between items-start mb-3">
                                         <div>
-                                            <h3 className="font-semibold text-gray-900">{student.name}</h3>
-                                            <p className="text-sm text-gray-500">{student.department} • Roll: {student.rollNumber}</p>
+                                            <h3 className="font-semibold text-white">{student.name}</h3>
+                                            <p className="text-sm text-slate-400">{student.department} • Roll: {student.rollNumber}</p>
                                         </div>
                                         <div className="flex items-center gap-1">
                                             {student.faceEmbedding?.length > 0 ? (
-                                                <span className="text-green-600 text-xs bg-green-50 px-2 py-1 rounded">✓ Face</span>
+                                                <span className="premium-badge premium-badge-green">✓ Face</span>
                                             ) : (
-                                                <span className="text-yellow-600 text-xs bg-yellow-50 px-2 py-1 rounded">✗ No Face</span>
+                                                <span className="premium-badge premium-badge-yellow">✗ No Face</span>
                                             )}
                                         </div>
                                     </div>
-                                    <div className="flex justify-between items-center pt-2 border-t">
+                                    <div className="flex justify-between items-center pt-2 border-t border-white/10">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-xs text-gray-500">Can Edit:</span>
+                                            <span className="text-xs text-slate-500">Can Edit:</span>
                                             <button
                                                 onClick={() => toggleEditPermission(student)}
                                                 disabled={togglingStudentId === student._id}
-                                                className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${student.canEditProfile ? 'bg-green-500' : 'bg-gray-300'}`}
+                                                className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${student.canEditProfile ? 'bg-emerald-500' : 'bg-slate-600'}`}
                                             >
                                                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition ${student.canEditProfile ? 'translate-x-4' : 'translate-x-0'}`} />
                                             </button>
                                         </div>
                                         <div className="flex gap-2">
-                                            <button onClick={() => openViewModal(student)} className="p-2 text-gray-600 hover:bg-gray-100 rounded" title="View">
+                                            <button onClick={() => openViewModal(student)} className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded" title="View">
                                                 <EyeIcon className="h-5 w-5" />
                                             </button>
-                                            <button onClick={() => openEditModal(student)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded" title="Edit">
+                                            <button onClick={() => openEditModal(student)} className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 rounded" title="Edit">
                                                 <PencilIcon className="h-5 w-5" />
                                             </button>
-                                            <button onClick={() => openFaceModal(student)} className="p-2 text-blue-600 hover:bg-blue-50 rounded" title="Register Face">
+                                            <button onClick={() => openFaceModal(student)} className="p-2 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/20 rounded" title="Register Face">
                                                 <CameraIcon className="h-5 w-5" />
                                             </button>
-                                            <button onClick={() => handleDeleteStudent(student._id)} className="p-2 text-red-600 hover:bg-red-50 rounded" title="Delete">
+                                            <button onClick={() => handleDeleteStudent(student._id)} className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded" title="Delete">
                                                 <TrashIcon className="h-5 w-5" />
                                             </button>
-                                            <button onClick={() => handleResetPassword(student._id, student.name)} className="p-2 text-yellow-600 hover:bg-yellow-50 rounded" title="Reset Password">
+                                            <button onClick={() => handleResetPassword(student._id, student.name)} className="p-2 text-amber-400 hover:text-amber-300 hover:bg-amber-500/20 rounded" title="Reset Password">
                                                 <KeyIcon className="h-5 w-5" />
                                             </button>
                                         </div>
@@ -1006,45 +1006,45 @@ export default function StaffDashboard() {
                         </div>
 
                         {/* Desktop Table View */}
-                        <div className="hidden sm:block shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-300">
-                                <thead className="bg-gray-50">
+                        <div className="hidden sm:block glass-card overflow-hidden">
+                            <table className="premium-table">
+                                <thead>
                                     <tr>
-                                        <th className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Name</th>
-                                        <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Roll No</th>
-                                        <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 hidden md:table-cell">Department</th>
-                                        <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Face</th>
-                                        <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Can Edit</th>
-                                        <th className="relative py-3.5 pl-3 pr-4 sm:pr-6 text-right text-sm font-semibold text-gray-900">Actions</th>
+                                        <th>Name</th>
+                                        <th>Roll No</th>
+                                        <th className="hidden md:table-cell">Department</th>
+                                        <th>Face</th>
+                                        <th>Can Edit</th>
+                                        <th className="text-right">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-200 bg-white">
+                                <tbody>
                                     {loadingStudents && (
                                         <tr>
                                             <td colSpan="6" className="py-12 text-center">
                                                 <div className="flex flex-col items-center gap-3">
-                                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>
-                                                    <p className="text-gray-500">Loading students...</p>
+                                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                                                    <p className="text-slate-400">Loading students...</p>
                                                 </div>
                                             </td>
                                         </tr>
                                     )}
-                                    {!loadingStudents && students.length === 0 && <tr><td colSpan="6" className="py-8 text-center text-gray-500">No students found.</td></tr>}
+                                    {!loadingStudents && students.length === 0 && <tr><td colSpan="6" className="py-8 text-center text-slate-500">No students found.</td></tr>}
                                     {!loadingStudents && students.map((student) => (
                                         <tr key={student._id}>
-                                            <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                                            <td className="font-medium text-white">
                                                 {student.name}
                                             </td>
-                                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{student.rollNumber}</td>
-                                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 hidden md:table-cell">{student.department}</td>
-                                            <td className="whitespace-nowrap px-3 py-4 text-sm">
-                                                {student.faceEmbedding?.length > 0 ? <span className="text-green-600">✓</span> : <span className="text-yellow-600">✗</span>}
+                                            <td>{student.rollNumber}</td>
+                                            <td className="hidden md:table-cell">{student.department}</td>
+                                            <td>
+                                                {student.faceEmbedding?.length > 0 ? <span className="text-emerald-400">✓</span> : <span className="text-amber-400">✗</span>}
                                             </td>
-                                            <td className="whitespace-nowrap px-3 py-4 text-sm">
+                                            <td>
                                                 <button
                                                     onClick={() => toggleEditPermission(student)}
                                                     disabled={togglingStudentId === student._id}
-                                                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 ${togglingStudentId === student._id ? 'opacity-50 cursor-wait' : ''} ${student.canEditProfile ? 'bg-green-500' : 'bg-gray-300'}`}
+                                                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${togglingStudentId === student._id ? 'opacity-50 cursor-wait' : ''} ${student.canEditProfile ? 'bg-emerald-500' : 'bg-slate-600'}`}
                                                     role="switch"
                                                     aria-checked={student.canEditProfile}
                                                     title={student.canEditProfile ? 'Click to disable' : 'Click to enable'}
@@ -1054,24 +1054,24 @@ export default function StaffDashboard() {
                                                     />
                                                 </button>
                                             </td>
-                                            <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                                                <div className="flex gap-2 items-center justify-end">
+                                            <td className="text-right">
+                                                <div className="flex gap-1 items-center justify-end">
                                                     <button
                                                         onClick={() => openViewModal(student)}
                                                         disabled={viewingStudentId === student._id}
-                                                        className={`p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded ${viewingStudentId === student._id ? 'opacity-50 cursor-wait' : ''}`}
+                                                        className={`p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded ${viewingStudentId === student._id ? 'opacity-50 cursor-wait' : ''}`}
                                                         title="View"
                                                     >
                                                         {viewingStudentId === student._id ? (
-                                                            <div className="animate-spin h-4 w-4 border-2 border-gray-600 border-t-transparent rounded-full"></div>
+                                                            <div className="animate-spin h-4 w-4 border-2 border-slate-400 border-t-transparent rounded-full"></div>
                                                         ) : (
                                                             <EyeIcon className="h-4 w-4" />
                                                         )}
                                                     </button>
-                                                    <button onClick={() => openEditModal(student)} className="p-1.5 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded" title="Edit"><PencilIcon className="h-4 w-4" /></button>
-                                                    <button onClick={() => openFaceModal(student)} className="p-1.5 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded" title="Register Face"><CameraIcon className="h-4 w-4" /></button>
-                                                    <button onClick={() => handleDeleteStudent(student._id)} className="p-1.5 text-red-600 hover:text-red-900 hover:bg-red-50 rounded" title="Delete"><TrashIcon className="h-4 w-4" /></button>
-                                                    <button onClick={() => handleResetPassword(student._id, student.name)} className="p-1.5 text-yellow-600 hover:text-yellow-900 hover:bg-yellow-50 rounded" title="Reset Password"><KeyIcon className="h-4 w-4" /></button>
+                                                    <button onClick={() => openEditModal(student)} className="p-1.5 text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 rounded" title="Edit"><PencilIcon className="h-4 w-4" /></button>
+                                                    <button onClick={() => openFaceModal(student)} className="p-1.5 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/20 rounded" title="Register Face"><CameraIcon className="h-4 w-4" /></button>
+                                                    <button onClick={() => handleDeleteStudent(student._id)} className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded" title="Delete"><TrashIcon className="h-4 w-4" /></button>
+                                                    <button onClick={() => handleResetPassword(student._id, student.name)} className="p-1.5 text-amber-400 hover:text-amber-300 hover:bg-amber-500/20 rounded" title="Reset Password"><KeyIcon className="h-4 w-4" /></button>
                                                 </div>
                                             </td>
                                         </tr>
