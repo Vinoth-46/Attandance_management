@@ -4,6 +4,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import './styles/action-icons.css';
+
 /* Base Styles */
 * {
   margin: 0;
@@ -380,7 +382,7 @@ body {
 /* Main App Background - Premium Gradient */
 .premium-bg {
   min-height: 100vh;
-  background: #FFFFFF;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   position: relative;
 }
 
@@ -392,9 +394,8 @@ body {
   right: 0;
   bottom: 0;
   background-image:
-    radial-gradient(ellipse at 20% 20%, rgba(30, 58, 138, 0.03) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 80%, rgba(30, 58, 138, 0.05) 0%, transparent 50%),
-    radial-gradient(ellipse at 40% 60%, rgba(59, 130, 246, 0.02) 0%, transparent 40%);
+    radial-gradient(ellipse at 20% 20%, rgba(30, 58, 138, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(59, 130, 246, 0.06) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
 }
@@ -426,42 +427,42 @@ body {
 
 /* Glass Card - For Cards */
 .glass-card {
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(30, 58, 138, 0.1);
+  border: 1px solid rgba(30, 58, 138, 0.15);
   border-radius: 1rem;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 20px rgba(30, 58, 138, 0.08);
 }
 
 .glass-card:hover {
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(30, 58, 138, 0.2);
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(30, 58, 138, 0.25);
   transform: translateY(-2px);
   box-shadow: 0 8px 30px rgba(30, 58, 138, 0.15);
 }
 
 /* Glass Card Dark - More Opaque */
 .glass-card-dark {
-  background: rgba(248, 250, 252, 0.8);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(30, 58, 138, 0.08);
+  border: 1px solid rgba(30, 58, 138, 0.12);
   border-radius: 1rem;
 }
 
 /* Premium Stat Card */
 .stat-card {
-  background: rgba(255, 255, 255, 0.8);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(30, 58, 138, 0.1);
+  border: 1px solid rgba(30, 58, 138, 0.15);
   border-radius: 1rem;
   padding: 1.5rem;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 15px rgba(30, 58, 138, 0.1);
 }
 
 .stat-card::before {
@@ -470,8 +471,8 @@ body {
   top: 0;
   left: 0;
   right: 0;
-  height: 3px;
-  background: #1E3A8A;
+  height: 4px;
+  background: linear-gradient(90deg, #1E3A8A 0%, #3b82f6 100%);
 }
 
 .stat-card-value {
@@ -609,24 +610,25 @@ body {
 }
 
 .premium-table thead {
-  background: rgba(30, 58, 138, 0.05);
+  background: rgba(30, 58, 138, 0.08);
 }
 
 .premium-table th {
   padding: 1rem;
   text-align: left;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #1E3A8A;
-  border-bottom: 2px solid rgba(30, 58, 138, 0.1);
+  border-bottom: 2px solid rgba(30, 58, 138, 0.15);
 }
 
 .premium-table td {
   padding: 1rem;
   color: #1e293b;
-  border-bottom: 1px solid rgba(30, 58, 138, 0.05);
+  font-weight: 500;
+  border-bottom: 1px solid rgba(30, 58, 138, 0.08);
 }
 
 .premium-table tbody tr {
@@ -634,7 +636,7 @@ body {
 }
 
 .premium-table tbody tr:hover {
-  background: rgba(30, 58, 138, 0.03);
+  background: rgba(30, 58, 138, 0.04);
 }
 
 /* Premium Badge */
@@ -774,15 +776,52 @@ body {
 }
 
 .text-primary {
-  color: #1e293b;
+  color: #0f172a;
+  font-weight: 600;
 }
 
 .text-secondary {
-  color: #64748b;
+  color: #475569;
+  font-weight: 500;
 }
 
 .text-muted {
-  color: #94a3b8;
+  color: #64748b;
+}
+
+/* Form Labels - Better Visibility */
+label,
+.form-label {
+  color: #1e293b !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem;
+}
+
+/* Input Text */
+input,
+textarea,
+select {
+  color: #0f172a !important;
+  font-weight: 500;
+}
+
+/* Verified Badge */
+.verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+}
+
+.verified-badge svg {
+  width: 1rem;
+  height: 1rem;
 }
 
 /* ============================================

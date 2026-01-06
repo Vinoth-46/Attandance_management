@@ -1,0 +1,81 @@
+/* Action Icon Styles - Modern & Visible */
+
+/* View Icon */
+.action-icon-view {
+    color: #1E3A8A;
+    transition: all 0.2s ease;
+}
+
+.action-icon-view:hover {
+    color: #3b82f6;
+    transform: scale(1.1);
+}
+
+/* Edit Icon */
+.action-icon-edit {
+    color: #1E3A8A;
+    transition: all 0.2s ease;
+}
+
+.action-icon-edit:hover {
+    color: #3b82f6;
+    transform: scale(1.1);
+}
+
+/* Camera/Photo Icon */
+.action-icon-camera {
+    color: #059669;
+    transition: all 0.2s ease;
+}
+
+.action-icon-camera:hover {
+    color: #10b981;
+    transform: scale(1.1);
+}
+
+/* Delete Icon */
+.action-icon-delete {
+    color: #ef4444;
+    transition: all 0.2s ease;
+}
+
+.action-icon-delete:hover {
+    color: #dc2626;
+    transform: scale(1.1);
+}
+
+/* Key/Password Icon */
+.action-icon-key {
+    color: #f59e0b;
+    transition: all 0.2s ease;
+}
+
+.action-icon-key:hover {
+    color: #d97706;
+    transform: scale(1.1);
+}
+
+/* Icon Button Container */
+.action-icons-container {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.action-icon-btn {
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+}
+
+.action-icon-btn:hover {
+    background: rgba(30, 58, 138, 0.08);
+}
+
+.action-icon-btn svg {
+    width: 1.25rem;
+    height: 1.25rem;
+}
