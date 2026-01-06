@@ -82,7 +82,7 @@ export default function Layout({ children }) {
                     <SparklesIcon className="h-7 w-7 text-white" />
                 </div>
                 <div>
-                    <span className="text-xl font-bold text-white tracking-tight">EduManage</span>
+                    <span className="text-xl font-bold text-white tracking-tight">University Manage</span>
                     <p className="text-xs text-slate-400">Attendance System</p>
                 </div>
             </div>
