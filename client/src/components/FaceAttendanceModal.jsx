@@ -197,95 +197,100 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-5">
-                <h2 className="text-lg font-bold text-center mb-3 text-gray-800">📸 Face Attendance</h2>
+        <div className="premium-modal-backdrop">
+            <div className="premium-modal">
+                {/* Header */}
+                <div className="premium-modal-header">
+                    <h2 className="premium-modal-title text-center">📸 Face Attendance</h2>
+                </div>
 
-                {/* Camera View - Only show if in 'face' step */}
-                {step === 'face' && (
-                    <div className="relative aspect-[4/3] bg-gray-900 rounded-lg overflow-hidden mb-3">
-                        {loading ? (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800">
-                                <div className="animate-spin rounded-full h-10 w-10 border-4 border-indigo-500 border-t-transparent mb-3"></div>
-                                <p className="text-white text-sm">{status}</p>
-                            </div>
-                        ) : (
-                            <Webcam
-                                audio={false}
-                                ref={webcamRef}
-                                screenshotFormat="image/jpeg"
-                                className="w-full h-full object-cover"
-                                videoConstraints={{ facingMode: 'user', width: 480, height: 360 }}
-                                mirrored={true}
-                            />
-                        )}
-                    </div>
-                )}
-
-                {/* Location Failure View */}
-                {(step === 'failed_location') && (
-                    <div className="text-center py-6 bg-orange-50 rounded-lg mb-4 border border-orange-100">
-                        <div className="text-4xl mb-2">📍❌</div>
-                        <h3 className="font-bold text-orange-800">Location Failed</h3>
-                        <p className="text-sm text-orange-700 mb-4 px-2">{status}</p>
-                        <p className="text-xs text-gray-500 mb-4">Your face was verified. You can retry location or use QR.</p>
-
-                        <div className="flex flex-col gap-2 px-4">
-                            <button onClick={retryLocation} className="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-500">
-                                🔄 Retry Location
-                            </button>
-                            <button onClick={goToQR} className="w-full py-2 bg-purple-600 text-white rounded-lg font-bold hover:bg-purple-500">
-                                📷 Scan QR Code
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* Status Text (only for non-failure states) */}
-                {step !== 'failed_location' && (
-                    <p className={`text-center font-semibold mb-4 text-sm ${status.includes('❌') ? 'text-red-600'
-                        : status.includes('✅') ? 'text-green-600'
-                            : status.includes('📍') ? 'text-orange-500'
-                                : 'text-indigo-600'
-                        }`}>
-                        {status}
-                    </p>
-                )}
-
-                {/* Action Buttons for Face Step */}
-                {step === 'face' && (
-                    <>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={onClose}
-                                className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200"
-                            >
-                                Cancel
-                            </button>
-
-                            {!loading && modelsLoaded && (
-                                <button
-                                    onClick={handleMarkAttendance}
-                                    disabled={verifying}
-                                    className={`flex-1 py-2.5 rounded-lg font-bold ${verifying
-                                        ? 'bg-gray-400 text-white cursor-not-allowed'
-                                        : 'bg-green-600 text-white hover:bg-green-500'
-                                        }`}
-                                >
-                                    {verifying ? '⏳ Verifying...' : '✓ Mark Attendance'}
-                                </button>
+                <div className="premium-modal-body">
+                    {/* Camera View - Only show if in 'face' step */}
+                    {step === 'face' && (
+                        <div className="relative aspect-[4/3] bg-slate-900 rounded-xl overflow-hidden mb-4 border border-white/10">
+                            {loading ? (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-800">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mb-3"></div>
+                                    <p className="text-white text-sm">{status}</p>
+                                </div>
+                            ) : (
+                                <Webcam
+                                    audio={false}
+                                    ref={webcamRef}
+                                    screenshotFormat="image/jpeg"
+                                    className="w-full h-full object-cover"
+                                    videoConstraints={{ facingMode: 'user', width: 480, height: 360 }}
+                                    mirrored={true}
+                                />
                             )}
                         </div>
+                    )}
 
-                        <div className="bg-blue-50 p-2 rounded-lg mt-3 text-center border border-blue-100">
-                            <p className="text-xs text-blue-700 font-medium">
-                                💡 Instructions: <br />
-                                Look at the camera and <b>breathe naturally</b>.<br />
-                                The system checks for tiny movements to ensure you are real.
-                            </p>
+                    {/* Location Failure View */}
+                    {(step === 'failed_location') && (
+                        <div className="text-center py-6 glass-card-dark rounded-xl mb-4 border border-amber-500/30">
+                            <div className="text-4xl mb-2">📍❌</div>
+                            <h3 className="font-bold text-amber-400">Location Failed</h3>
+                            <p className="text-sm text-slate-300 mb-4 px-2">{status}</p>
+                            <p className="text-xs text-slate-500 mb-4">Your face was verified. You can retry location or use QR.</p>
+
+                            <div className="flex flex-col gap-2 px-4">
+                                <button onClick={retryLocation} className="premium-btn justify-center w-full">
+                                    🔄 Retry Location
+                                </button>
+                                <button onClick={goToQR} className="premium-btn premium-btn-purple justify-center w-full">
+                                    📷 Scan QR Code
+                                </button>
+                            </div>
                         </div>
-                    </>
-                )}
+                    )}
+
+                    {/* Status Text (only for non-failure states) */}
+                    {step !== 'failed_location' && (
+                        <p className={`text-center font-semibold mb-4 text-sm ${status.includes('❌') ? 'text-red-400'
+                            : status.includes('✅') ? 'text-emerald-400'
+                                : status.includes('📍') ? 'text-amber-400'
+                                    : 'text-blue-400'
+                            }`}>
+                            {status}
+                        </p>
+                    )}
+
+                    {/* Action Buttons for Face Step */}
+                    {step === 'face' && (
+                        <>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={onClose}
+                                    className="premium-btn premium-btn-outline flex-1 justify-center"
+                                >
+                                    Cancel
+                                </button>
+
+                                {!loading && modelsLoaded && (
+                                    <button
+                                        onClick={handleMarkAttendance}
+                                        disabled={verifying}
+                                        className={`premium-btn flex-1 justify-center ${verifying
+                                            ? 'opacity-50 cursor-not-allowed'
+                                            : 'premium-btn-green'
+                                            }`}
+                                    >
+                                        {verifying ? '⏳ Verifying...' : '✓ Mark Attendance'}
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="glass-card-dark p-3 rounded-xl mt-4 text-center">
+                                <p className="text-xs text-slate-400">
+                                    💡 <span className="text-slate-300">Instructions:</span><br />
+                                    Look at the camera and <b className="text-white">breathe naturally</b>.<br />
+                                    The system checks for tiny movements to ensure you are real.
+                                </p>
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
         </div>
     );

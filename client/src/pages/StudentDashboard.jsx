@@ -250,23 +250,23 @@ export default function StudentDashboard() {
             {/* Real-time Pop-up Notification (appears when session just started) */}
             {showSessionAlert && sessionNotification && (
                 <div className="fixed top-4 right-4 z-50 animate-bounce">
-                    <div className="bg-blue-600 text-white p-4 rounded-lg shadow-2xl max-w-sm">
+                    <div className="glass-card p-4 max-w-sm border border-blue-500/30 shadow-2xl shadow-blue-500/20">
                         <div className="flex items-start gap-3">
                             <span className="text-2xl">🔔</span>
                             <div className="flex-1">
-                                <p className="font-bold">New Session Started!</p>
-                                <p className="text-sm opacity-90">{sessionNotification.message}</p>
+                                <p className="font-bold text-white">New Session Started!</p>
+                                <p className="text-sm text-slate-300">{sessionNotification.message}</p>
                             </div>
                             <button
                                 onClick={() => { setShowSessionAlert(false); dismissNotification(); }}
-                                className="text-white/80 hover:text-white"
+                                className="text-slate-400 hover:text-white transition-colors"
                             >
                                 ✕
                             </button>
                         </div>
                         <button
                             onClick={() => { setShowModal(true); setShowSessionAlert(false); }}
-                            className="mt-3 w-full bg-white text-blue-600 py-2 rounded-md font-semibold hover:bg-blue-50"
+                            className="mt-3 w-full premium-btn premium-btn-green justify-center"
                         >
                             Mark Attendance Now
                         </button>
@@ -281,23 +281,23 @@ export default function StudentDashboard() {
                 const allMarked = unmarkedSessions.length === 0;
 
                 return (
-                    <div className={`mb-6 ${allMarked ? 'bg-blue-50 border-blue-200' : 'bg-green-50 border-green-200'} border rounded-lg p-4`}>
+                    <div className={`mb-6 glass-card p-4 ${allMarked ? 'border-blue-500/30' : 'border-emerald-500/30 animate-glow'}`}>
                         <div className="flex items-center justify-between flex-wrap gap-3">
                             <div>
                                 {allMarked ? (
                                     <>
-                                        <p className="text-lg font-bold text-blue-800">✅ Attendance Marked for this session!</p>
+                                        <p className="text-lg font-bold text-blue-400">✅ Attendance Marked for this session!</p>
                                         {activeSessions.map(session => (
-                                            <p key={session._id} className="text-sm text-blue-700">
+                                            <p key={session._id} className="text-sm text-slate-300">
                                                 📚 {session.period} by {session.staffName} • Session active for ⏱ {Math.floor(session.timeRemaining / 60)}:{(session.timeRemaining % 60).toString().padStart(2, '0')} more
                                             </p>
                                         ))}
                                     </>
                                 ) : (
                                     <>
-                                        <p className="text-lg font-bold text-green-800">🔔 Attendance Open!</p>
+                                        <p className="text-lg font-bold text-emerald-400">🔔 Attendance Open!</p>
                                         {activeSessions.map(session => (
-                                            <p key={session._id} className="text-sm text-green-700">
+                                            <p key={session._id} className="text-sm text-slate-300">
                                                 📚 {session.period} by {session.staffName} • ⏱ {Math.floor(session.timeRemaining / 60)}:{(session.timeRemaining % 60).toString().padStart(2, '0')} remaining
                                             </p>
                                         ))}
@@ -307,7 +307,7 @@ export default function StudentDashboard() {
                             {!allMarked && (
                                 <button
                                     onClick={() => setShowModal(true)}
-                                    className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-500 animate-pulse"
+                                    className="premium-btn premium-btn-green animate-pulse"
                                 >
                                     Mark Now
                                 </button>
@@ -319,15 +319,18 @@ export default function StudentDashboard() {
             {/* Header Section */}
             <div className="md:flex md:items-center md:justify-between mb-8">
                 <div className="min-w-0 flex-1">
-                    <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+                    <h2 className="text-2xl font-bold leading-7 text-gradient sm:truncate sm:text-3xl sm:tracking-tight">
                         {getTitle()}
                     </h2>
-                    <p className="mt-1 text-sm text-gray-500">Welcome back, {user?.name}.</p>
+                    <p className="mt-1 text-sm text-slate-400">Welcome back, {user?.name}.</p>
                 </div>
                 {view === 'dashboard' && (
                     <div className="mt-4 flex gap-2 md:ml-4 md:mt-0">
-                        <button onClick={() => setShowModal(true)} className="inline-flex items-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500">
-                            Mark Attendance
+                        <button onClick={() => setShowModal(true)} className="premium-btn">
+                            📸 Mark Attendance
+                        </button>
+                        <button onClick={() => setShowQRScanner(true)} className="premium-btn premium-btn-purple">
+                            📷 Scan QR
                         </button>
                     </div>
                 )}
@@ -336,90 +339,119 @@ export default function StudentDashboard() {
             {/* Dashboard View */}
             {view === 'dashboard' && (
                 <>
+                    {/* Premium Stat Cards */}
                     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-                        <div className="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                            <dt className="truncate text-sm font-medium text-gray-500">Total Days Present</dt>
-                            <dd className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">{stats.totalPresent}</dd>
+                        <div className="stat-card">
+                            <p className="stat-card-label">Total Days Present</p>
+                            <p className="stat-card-value mt-2">{stats.totalPresent}</p>
                         </div>
-                        <div className="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                            <dt className="truncate text-sm font-medium text-gray-500">Attendance Percentage</dt>
-                            <dd className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">{stats.logs.length > 0 ? '92%' : '0%'}</dd>
+                        <div className="stat-card">
+                            <p className="stat-card-label">Attendance Percentage</p>
+                            <p className="stat-card-value mt-2">{stats.logs.length > 0 ? '92%' : '0%'}</p>
+                        </div>
+                        <div className="stat-card">
+                            <p className="stat-card-label">Total Periods</p>
+                            <p className="stat-card-value mt-2">{stats.totalPeriodsPresent || stats.logs.length}</p>
+                        </div>
+                        <div className="stat-card">
+                            <p className="stat-card-label">Active Sessions</p>
+                            <p className="stat-card-value mt-2">{activeSessions.length}</p>
                         </div>
                     </div>
-                    <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
-                        <table className="min-w-full divide-y divide-gray-300">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Date</th>
-                                    <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Session/Period</th>
-                                    <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Time</th>
-                                    <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200 bg-white">
-                                {stats.logs.map((log) => (
-                                    <tr key={log._id}>
-                                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">{new Date(log.date).toLocaleDateString()}</td>
-                                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-700 font-medium">{log.period || 'General'}</td>
-                                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{new Date(log.time).toLocaleTimeString()}</td>
-                                        <td className="whitespace-nowrap px-3 py-4 text-sm"><span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${log.status === 'Present' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{log.status}</span></td>
+
+                    {/* Premium Attendance Table */}
+                    <div className="glass-card overflow-hidden">
+                        <div className="p-4 border-b border-white/10">
+                            <h3 className="text-lg font-semibold text-white">📋 Attendance History</h3>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="premium-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Session/Period</th>
+                                        <th>Time</th>
+                                        <th>Status</th>
                                     </tr>
-                                ))}
-                                {stats.logs.length === 0 && <tr><td colSpan="3" className="px-6 py-8 text-center text-gray-500">No attendance records.</td></tr>}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {stats.logs.map((log) => (
+                                        <tr key={log._id}>
+                                            <td className="font-medium">{new Date(log.date).toLocaleDateString()}</td>
+                                            <td>{log.period || 'General'}</td>
+                                            <td className="text-slate-400">{new Date(log.time).toLocaleTimeString()}</td>
+                                            <td>
+                                                <span className={`premium-badge ${log.status === 'Present' ? 'premium-badge-green' : 'premium-badge-red'}`}>
+                                                    {log.status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {stats.logs.length === 0 && (
+                                        <tr>
+                                            <td colSpan="4" className="text-center py-12 text-slate-500">
+                                                <div className="text-4xl mb-2">📭</div>
+                                                No attendance records yet.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </>
             )}
 
             {/* Profile View */}
             {view === 'profile' && profile && (
-                <div className="bg-white shadow sm:rounded-lg p-6">
+                <div className="glass-card p-6">
                     {/* Profile Header */}
-                    <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center justify-between mb-6 pb-6 border-b border-white/10">
                         <div className="flex items-center gap-4">
-                            <div className="w-16 h-16 rounded-full bg-brand-100 flex items-center justify-center overflow-hidden">
+                            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center overflow-hidden shadow-lg shadow-blue-500/30">
                                 {profile.profilePhoto ? (
                                     <img src={profile.profilePhoto} alt={profile.name} className="w-full h-full object-cover" />
                                 ) : (
-                                    <span className="text-brand-600 text-2xl font-bold">{profile.name?.charAt(0)}</span>
+                                    <span className="text-white text-3xl font-bold">{profile.name?.charAt(0)}</span>
                                 )}
                             </div>
                             <div>
-                                <h3 className="text-lg font-semibold text-gray-900">{profile.name}</h3>
-                                <p className="text-sm text-gray-500">Roll No: {profile.rollNumber} | {profile.department}</p>
+                                <h3 className="text-xl font-bold text-white">{profile.name}</h3>
+                                <p className="text-slate-400">Roll No: {profile.rollNumber} | {profile.department}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
                             {profile.canUpdatePhoto && (
                                 <button
                                     onClick={() => setShowPhotoUpdate(true)}
-                                    className="inline-flex items-center gap-1 rounded-md bg-amber-500 px-3 py-2 text-sm font-semibold text-white hover:bg-amber-400"
+                                    className="premium-btn" style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' }}
                                 >
                                     <CameraIcon className="h-4 w-4" /> Update Photo
                                 </button>
                             )}
                             {profile.canEditProfile && !isEditing && (
-                                <button onClick={() => setIsEditing(true)} className="inline-flex items-center gap-1 rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-500">
+                                <button onClick={() => setIsEditing(true)} className="premium-btn">
                                     <PencilIcon className="h-4 w-4" /> Edit Profile
                                 </button>
                             )}
                             {!profile.canEditProfile && !profile.canUpdatePhoto && (
-                                <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">🔒 Editing disabled</span>
+                                <span className="text-xs text-slate-500 glass-card px-3 py-1">🔒 Editing disabled</span>
                             )}
                         </div>
                     </div>
 
-                    {saveMsg && <p className={`mb-4 text-sm font-semibold ${saveMsg.includes('success') ? 'text-green-600' : 'text-red-600'}`}>{saveMsg}</p>}
+                    {saveMsg && <p className={`mb-4 text-sm font-semibold ${saveMsg.includes('success') ? 'text-emerald-400' : 'text-red-400'}`}>{saveMsg}</p>}
 
                     {isEditing ? (
                         <form onSubmit={handleProfileUpdate} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
-                                <div><label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                                    <input className="w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border" value={editData.phone || ''} onChange={e => setEditData({ ...editData, phone: e.target.value })} />
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">Phone</label>
+                                    <input className="premium-input" value={editData.phone || ''} onChange={e => setEditData({ ...editData, phone: e.target.value })} />
                                 </div>
-                                <div><label className="block text-sm font-medium text-gray-700 mb-1">Blood Group</label>
-                                    <select className="w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border" value={editData.bloodGroup || ''} onChange={e => setEditData({ ...editData, bloodGroup: e.target.value })}>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">Blood Group</label>
+                                    <select className="premium-select" value={editData.bloodGroup || ''} onChange={e => setEditData({ ...editData, bloodGroup: e.target.value })}>
                                         <option value="">Select</option>
                                         <option value="A+">A+</option><option value="A-">A-</option>
                                         <option value="B+">B+</option><option value="B-">B-</option>
@@ -429,55 +461,63 @@ export default function StudentDashboard() {
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
-                                <div><label className="block text-sm font-medium text-gray-700 mb-1">Father's Name</label>
-                                    <input className="w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border" value={editData.fatherName || ''} onChange={e => setEditData({ ...editData, fatherName: e.target.value })} />
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">Father's Name</label>
+                                    <input className="premium-input" value={editData.fatherName || ''} onChange={e => setEditData({ ...editData, fatherName: e.target.value })} />
                                 </div>
-                                <div><label className="block text-sm font-medium text-gray-700 mb-1">Mother's Name</label>
-                                    <input className="w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border" value={editData.motherName || ''} onChange={e => setEditData({ ...editData, motherName: e.target.value })} />
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">Mother's Name</label>
+                                    <input className="premium-input" value={editData.motherName || ''} onChange={e => setEditData({ ...editData, motherName: e.target.value })} />
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
-                                <div><label className="block text-sm font-medium text-gray-700 mb-1">Parent Phone</label>
-                                    <input className="w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border" value={editData.parentPhone || ''} onChange={e => setEditData({ ...editData, parentPhone: e.target.value })} />
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">Parent Phone</label>
+                                    <input className="premium-input" value={editData.parentPhone || ''} onChange={e => setEditData({ ...editData, parentPhone: e.target.value })} />
                                 </div>
-                                <div><label className="block text-sm font-medium text-gray-700 mb-1">Emergency Contact</label>
-                                    <input className="w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border" value={editData.emergencyContact || ''} onChange={e => setEditData({ ...editData, emergencyContact: e.target.value })} />
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">Emergency Contact</label>
+                                    <input className="premium-input" value={editData.emergencyContact || ''} onChange={e => setEditData({ ...editData, emergencyContact: e.target.value })} />
                                 </div>
                             </div>
-                            <div><label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                                <input className="w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border" value={editData.address || ''} onChange={e => setEditData({ ...editData, address: e.target.value })} />
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">Address</label>
+                                <input className="premium-input" value={editData.address || ''} onChange={e => setEditData({ ...editData, address: e.target.value })} />
                             </div>
                             <div className="grid grid-cols-3 gap-4">
-                                <div><label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                                    <input className="w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border" value={editData.city || ''} onChange={e => setEditData({ ...editData, city: e.target.value })} />
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">City</label>
+                                    <input className="premium-input" value={editData.city || ''} onChange={e => setEditData({ ...editData, city: e.target.value })} />
                                 </div>
-                                <div><label className="block text-sm font-medium text-gray-700 mb-1">State</label>
-                                    <input className="w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border" value={editData.state || ''} onChange={e => setEditData({ ...editData, state: e.target.value })} />
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">State</label>
+                                    <input className="premium-input" value={editData.state || ''} onChange={e => setEditData({ ...editData, state: e.target.value })} />
                                 </div>
-                                <div><label className="block text-sm font-medium text-gray-700 mb-1">Pincode</label>
-                                    <input className="w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border" value={editData.pincode || ''} onChange={e => setEditData({ ...editData, pincode: e.target.value })} />
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">Pincode</label>
+                                    <input className="premium-input" value={editData.pincode || ''} onChange={e => setEditData({ ...editData, pincode: e.target.value })} />
                                 </div>
                             </div>
-                            <div className="flex justify-end gap-3 mt-6">
-                                <button type="button" onClick={() => { setIsEditing(false); setEditData(profile); }} className="px-4 py-2 bg-white text-gray-700 border rounded-md hover:bg-gray-50 text-sm font-medium" disabled={savingProfile}>Cancel</button>
-                                <button type="submit" disabled={savingProfile} className="px-4 py-2 bg-brand-600 text-white rounded-md hover:bg-brand-500 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-white/10">
+                                <button type="button" onClick={() => { setIsEditing(false); setEditData(profile); }} className="premium-btn premium-btn-outline" disabled={savingProfile}>Cancel</button>
+                                <button type="submit" disabled={savingProfile} className="premium-btn premium-btn-green">
                                     {savingProfile ? 'Saving...' : 'Save Changes'}
                                 </button>
                             </div>
                         </form>
                     ) : (
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-gray-50 p-3 rounded-lg"><p className="text-xs text-gray-500 uppercase">Email</p><p className="text-sm font-medium text-gray-900">{profile.email || '-'}</p></div>
-                            <div className="bg-gray-50 p-3 rounded-lg"><p className="text-xs text-gray-500 uppercase">Phone</p><p className="text-sm font-medium text-gray-900">{profile.phone || '-'}</p></div>
-                            <div className="bg-gray-50 p-3 rounded-lg"><p className="text-xs text-gray-500 uppercase">Department</p><p className="text-sm font-medium text-gray-900">{profile.department || '-'}</p></div>
-                            <div className="bg-gray-50 p-3 rounded-lg"><p className="text-xs text-gray-500 uppercase">Year / Section</p><p className="text-sm font-medium text-gray-900">{profile.year || '-'} / {profile.section || '-'}</p></div>
-                            <div className="bg-gray-50 p-3 rounded-lg"><p className="text-xs text-gray-500 uppercase">Date of Birth</p><p className="text-sm font-medium text-gray-900">{profile.dob ? new Date(profile.dob).toLocaleDateString() : '-'}</p></div>
-                            <div className="bg-gray-50 p-3 rounded-lg"><p className="text-xs text-gray-500 uppercase">Blood Group</p><p className="text-sm font-medium text-gray-900">{profile.bloodGroup || '-'}</p></div>
-                            <div className="bg-gray-50 p-3 rounded-lg"><p className="text-xs text-gray-500 uppercase">Father's Name</p><p className="text-sm font-medium text-gray-900">{profile.fatherName || '-'}</p></div>
-                            <div className="bg-gray-50 p-3 rounded-lg"><p className="text-xs text-gray-500 uppercase">Mother's Name</p><p className="text-sm font-medium text-gray-900">{profile.motherName || '-'}</p></div>
-                            <div className="bg-gray-50 p-3 rounded-lg"><p className="text-xs text-gray-500 uppercase">Parent Phone</p><p className="text-sm font-medium text-gray-900">{profile.parentPhone || '-'}</p></div>
-                            <div className="bg-gray-50 p-3 rounded-lg"><p className="text-xs text-gray-500 uppercase">Emergency Contact</p><p className="text-sm font-medium text-gray-900">{profile.emergencyContact || '-'}</p></div>
-                            <div className="bg-gray-50 p-3 rounded-lg col-span-2"><p className="text-xs text-gray-500 uppercase">Address</p><p className="text-sm font-medium text-gray-900">{[profile.address, profile.city, profile.state, profile.pincode].filter(Boolean).join(', ') || '-'}</p></div>
+                            <div className="glass-card-dark p-4"><p className="text-xs text-slate-500 uppercase tracking-wider">Email</p><p className="text-sm font-medium text-white mt-1">{profile.email || '-'}</p></div>
+                            <div className="glass-card-dark p-4"><p className="text-xs text-slate-500 uppercase tracking-wider">Phone</p><p className="text-sm font-medium text-white mt-1">{profile.phone || '-'}</p></div>
+                            <div className="glass-card-dark p-4"><p className="text-xs text-slate-500 uppercase tracking-wider">Department</p><p className="text-sm font-medium text-white mt-1">{profile.department || '-'}</p></div>
+                            <div className="glass-card-dark p-4"><p className="text-xs text-slate-500 uppercase tracking-wider">Year / Section</p><p className="text-sm font-medium text-white mt-1">{profile.year || '-'} / {profile.section || '-'}</p></div>
+                            <div className="glass-card-dark p-4"><p className="text-xs text-slate-500 uppercase tracking-wider">Date of Birth</p><p className="text-sm font-medium text-white mt-1">{profile.dob ? new Date(profile.dob).toLocaleDateString() : '-'}</p></div>
+                            <div className="glass-card-dark p-4"><p className="text-xs text-slate-500 uppercase tracking-wider">Blood Group</p><p className="text-sm font-medium text-white mt-1">{profile.bloodGroup || '-'}</p></div>
+                            <div className="glass-card-dark p-4"><p className="text-xs text-slate-500 uppercase tracking-wider">Father's Name</p><p className="text-sm font-medium text-white mt-1">{profile.fatherName || '-'}</p></div>
+                            <div className="glass-card-dark p-4"><p className="text-xs text-slate-500 uppercase tracking-wider">Mother's Name</p><p className="text-sm font-medium text-white mt-1">{profile.motherName || '-'}</p></div>
+                            <div className="glass-card-dark p-4"><p className="text-xs text-slate-500 uppercase tracking-wider">Parent Phone</p><p className="text-sm font-medium text-white mt-1">{profile.parentPhone || '-'}</p></div>
+                            <div className="glass-card-dark p-4"><p className="text-xs text-slate-500 uppercase tracking-wider">Emergency Contact</p><p className="text-sm font-medium text-white mt-1">{profile.emergencyContact || '-'}</p></div>
+                            <div className="glass-card-dark p-4 col-span-2"><p className="text-xs text-slate-500 uppercase tracking-wider">Address</p><p className="text-sm font-medium text-white mt-1">{[profile.address, profile.city, profile.state, profile.pincode].filter(Boolean).join(', ') || '-'}</p></div>
                         </div>
                     )}
                 </div>
@@ -486,41 +526,57 @@ export default function StudentDashboard() {
             {/* Leave View */}
             {view === 'leave' && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div className="bg-white shadow sm:rounded-lg p-6">
-                        <h3 className="text-base font-semibold leading-7 text-gray-900">Request Time Off</h3>
-                        <p className="mt-1 text-sm text-gray-500">Submit your leave application for staff approval.</p>
-                        <form onSubmit={handleLeaveSubmit} className="mt-6 space-y-6">
+                    {/* Leave Request Form */}
+                    <div className="glass-card p-6">
+                        <h3 className="text-lg font-semibold text-white">📝 Request Time Off</h3>
+                        <p className="mt-1 text-sm text-slate-400">Submit your leave application for staff approval.</p>
+                        <form onSubmit={handleLeaveSubmit} className="mt-6 space-y-5">
                             <div className="grid grid-cols-2 gap-4">
-                                <div><label className="block text-sm font-medium text-gray-900">Start Date</label>
-                                    <input type="date" required value={leaveDates.start} onChange={e => setLeaveDates({ ...leaveDates, start: e.target.value })} className="mt-2 block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 sm:text-sm" /></div>
-                                <div><label className="block text-sm font-medium text-gray-900">End Date</label>
-                                    <input type="date" required value={leaveDates.end} onChange={e => setLeaveDates({ ...leaveDates, end: e.target.value })} className="mt-2 block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 sm:text-sm" /></div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">Start Date</label>
+                                    <input type="date" required value={leaveDates.start} onChange={e => setLeaveDates({ ...leaveDates, start: e.target.value })} className="premium-input" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">End Date</label>
+                                    <input type="date" required value={leaveDates.end} onChange={e => setLeaveDates({ ...leaveDates, end: e.target.value })} className="premium-input" />
+                                </div>
                             </div>
-                            <div><label className="block text-sm font-medium text-gray-900">Reason</label>
-                                <textarea rows={3} required value={leaveReason} onChange={e => setLeaveReason(e.target.value)} placeholder="Describe your reason..." className="mt-2 block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 sm:text-sm" /></div>
-                            {leaveMsg && <p className={`text-sm font-semibold ${leaveMsg.includes('success') ? 'text-green-600' : 'text-red-600'}`}>{leaveMsg}</p>}
-                            <div className="flex justify-end"><button type="submit" className="rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-500">Submit Request</button></div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">Reason</label>
+                                <textarea rows={3} required value={leaveReason} onChange={e => setLeaveReason(e.target.value)} placeholder="Describe your reason..." className="premium-input resize-none" />
+                            </div>
+                            {leaveMsg && <p className={`text-sm font-semibold ${leaveMsg.includes('success') ? 'text-emerald-400' : 'text-red-400'}`}>{leaveMsg}</p>}
+                            <div className="flex justify-end">
+                                <button type="submit" className="premium-btn">Submit Request</button>
+                            </div>
                         </form>
                     </div>
-                    <div className="bg-white shadow sm:rounded-lg p-6">
-                        <h3 className="text-base font-semibold leading-7 text-gray-900">My Leave Requests</h3>
-                        <p className="mt-1 text-sm text-gray-500">Track status of your applications.</p>
+
+                    {/* My Leave Requests */}
+                    <div className="glass-card p-6">
+                        <h3 className="text-lg font-semibold text-white">📋 My Leave Requests</h3>
+                        <p className="mt-1 text-sm text-slate-400">Track status of your applications.</p>
                         <div className="mt-6 space-y-4 max-h-96 overflow-y-auto">
-                            {myLeaves.length === 0 && <p className="text-gray-500 text-center py-8">No leave requests yet.</p>}
+                            {myLeaves.length === 0 && (
+                                <div className="text-center py-12 text-slate-500">
+                                    <div className="text-4xl mb-2">📭</div>
+                                    No leave requests yet.
+                                </div>
+                            )}
                             {myLeaves.map((leave) => (
-                                <div key={leave._id} className={`p-4 rounded-lg border ${leave.status === 'Approved' ? 'border-green-200 bg-green-50' : leave.status === 'Rejected' ? 'border-red-200 bg-red-50' : 'border-yellow-200 bg-yellow-50'}`}>
+                                <div key={leave._id} className={`glass-card-dark p-4 border-l-4 ${leave.status === 'Approved' ? 'border-l-emerald-500' : leave.status === 'Rejected' ? 'border-l-red-500' : 'border-l-amber-500'}`}>
                                     <div className="flex items-center justify-between mb-2">
-                                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(leave.status)}`}>
+                                        <span className={`premium-badge ${leave.status === 'Approved' ? 'premium-badge-green' : leave.status === 'Rejected' ? 'premium-badge-red' : 'premium-badge-yellow'}`}>
                                             {leave.status === 'Approved' && '✅ '}{leave.status === 'Rejected' && '❌ '}{leave.status === 'Pending' && '⏳ '}{leave.status}
                                         </span>
-                                        <span className="text-xs text-gray-500">{new Date(leave.createdAt).toLocaleDateString()}</span>
+                                        <span className="text-xs text-slate-500">{new Date(leave.createdAt).toLocaleDateString()}</span>
                                     </div>
-                                    <p className="text-sm font-medium text-gray-900">{new Date(leave.startDate).toLocaleDateString()} - {new Date(leave.endDate).toLocaleDateString()}</p>
-                                    <p className="text-sm text-gray-600 mt-1">{leave.reason}</p>
+                                    <p className="text-sm font-medium text-white">{new Date(leave.startDate).toLocaleDateString()} - {new Date(leave.endDate).toLocaleDateString()}</p>
+                                    <p className="text-sm text-slate-400 mt-1">{leave.reason}</p>
                                     {leave.status === 'Rejected' && leave.rejectionReason && (
-                                        <div className="mt-3 p-2 bg-red-100 rounded border border-red-300">
-                                            <p className="text-xs font-medium text-red-800">Rejection Reason:</p>
-                                            <p className="text-sm text-red-700">{leave.rejectionReason}</p>
+                                        <div className="mt-3 p-2 bg-red-500/10 rounded border border-red-500/30">
+                                            <p className="text-xs font-medium text-red-400">Rejection Reason:</p>
+                                            <p className="text-sm text-red-300">{leave.rejectionReason}</p>
                                         </div>
                                     )}
                                 </div>
