@@ -6,7 +6,7 @@ const leaveSchema = new mongoose.Schema({
     endDate: { type: Date, required: true },
     reason: { type: String, required: true },
     attachment: { type: String }, // URL to document
-    status: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
+    status: { type: String, enum: ['Pending', 'Approved', 'Rejected', 'Deleted'], default: 'Pending' },
     approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     rejectionReason: { type: String },
 }, {

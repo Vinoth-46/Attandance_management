@@ -53,7 +53,7 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
         setStep('location');
         setStatus('📍 Getting location...');
 
-        let location;
+        let location = null;
         try {
             location = await new Promise((resolve, reject) => {
                 if (!navigator.geolocation) reject(new Error('GPS not available'));
@@ -64,10 +64,9 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
                 );
             });
         } catch (locErr) {
-            setStep('failed_location');
-            setStatus('📍 Location failed. Retry or use QR.');
-            setVerifying(false);
-            return;
+            // Don't block here - let the backend decide if location is required
+            console.log('Location failed, proceeding without it:', locErr.message);
+            location = null;
         }
 
         setStatus('✅ Sending data...');
@@ -76,7 +75,7 @@ export default function FaceAttendanceModal({ onClose, onSuccess }) {
             await api.post('/attendance/mark', {
                 faceDescriptor: faceData.descriptor,
                 capturedPhoto: faceData.photo,
-                location,
+                location, // May be null if location failed
                 livenessScore: 0.99
             });
 

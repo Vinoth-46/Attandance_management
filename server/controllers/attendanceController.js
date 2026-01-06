@@ -97,7 +97,14 @@ const markAttendance = async (req, res) => {
             endTime: { $gt: now }
         });
 
-        if (activeSession && activeSession.location && activeSession.location.latitude) {
+        // GEOFENCING: Only enforce if location was EXPLICITLY set (latitude is a valid number)
+        const geofencingEnabled = activeSession &&
+            activeSession.location &&
+            typeof activeSession.location.latitude === 'number' &&
+            !isNaN(activeSession.location.latitude) &&
+            activeSession.location.latitude !== 0;
+
+        if (geofencingEnabled) {
             if (!location || !location.latitude || !location.longitude) {
                 return res.status(400).json({ message: 'Location permission required to mark attendance.' });
             }
@@ -134,6 +141,8 @@ const markAttendance = async (req, res) => {
                     }
                 });
             }
+        } else {
+            console.log('Geofencing not enabled for this session - allowing attendance without location check');
         }
 
         const startOfDay = new Date();

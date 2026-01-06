@@ -10,6 +10,10 @@ export default function QRScannerModal({ isOpen, onClose, onSuccess }) {
     const [qrData, setQrData] = useState(null);
     const [faceStatus, setFaceStatus] = useState('');
     const [livenessStep, setLivenessStep] = useState(0);
+    const [error, setError] = useState('');
+    const [scanning, setScanning] = useState(false);
+    const [verifying, setVerifying] = useState(false);
+    const [success, setSuccess] = useState(false);
     const webcamRef = useRef(null);
     const html5QrCodeRef = useRef(null);
 

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { applyLeave, getMyLeaves, getPendingLeaves, getApprovedLeaves, getRejectedLeaves, updateLeaveStatus } = require('../controllers/leaveController');
+const { applyLeave, getMyLeaves, getPendingLeaves, getApprovedLeaves, getRejectedLeaves, getDeletedLeaves, updateLeaveStatus, deleteLeave, bulkDeleteLeaves } = require('../controllers/leaveController');
 const { protect, facultyAdvisor } = require('../middleware/authMiddleware');
 
 router.route('/')
@@ -18,8 +18,16 @@ router.route('/approved')
 router.route('/rejected')
     .get(protect, facultyAdvisor, getRejectedLeaves); // Faculty Advisor view rejected
 
+router.route('/deleted')
+    .get(protect, facultyAdvisor, getDeletedLeaves); // Faculty Advisor view deleted
+
+router.route('/bulk')
+    .delete(protect, facultyAdvisor, bulkDeleteLeaves); // Bulk delete
+
+
 router.route('/:id')
-    .put(protect, facultyAdvisor, updateLeaveStatus); // Faculty Advisor approve/reject
+    .put(protect, facultyAdvisor, updateLeaveStatus) // Faculty Advisor approve/reject
+    .delete(protect, facultyAdvisor, deleteLeave);   // Soft delete
 
 module.exports = router;
 
